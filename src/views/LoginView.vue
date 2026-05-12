@@ -3,7 +3,6 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
 
-import Card from 'primevue/card'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
@@ -19,22 +18,16 @@ const errorMessage = ref('')
 const handleLogin = async () => {
   isLoading.value = true
   errorMessage.value = ''
-
   try {
     const success = await authStore.login(email.value, password.value)
     if (success) {
       const role = authStore.user.role
-
-      if (role === 'admin') {
-        router.push('/admin/dashboard')
-      } else if (role === 'manager') {
-        router.push('/manager/reports')
-      } else {
-        router.push('/pos')
-      }
+      if (role === 'manager') router.push('/manager')
+      else if (role === 'admin') router.push('/admin')
+      else router.push('/pos')
     }
-  } catch (error) {
-    errorMessage.value = error.response?.data?.message || 'Gagal login.'
+  } catch (e) {
+    errorMessage.value = e.response?.data?.message || 'Email atau password salah.'
   } finally {
     isLoading.value = false
   }
@@ -42,41 +35,71 @@ const handleLogin = async () => {
 </script>
 
 <template>
-  <div class="flex items-center justify-center min-h-screen bg-gray-100">
-    <Card class="w-full max-w-md shadow-lg">
-      <template #title>
-        <h2 class="text-2xl font-bold text-center">Login Kantin</h2>
-      </template>
-      <template #content>
-        <form @submit.prevent="handleLogin" class="flex flex-col gap-4 mt-4">
-          <div class="flex flex-col gap-2">
-            <label for="email">Email</label>
+  <div class="min-h-screen flex" style="font-family: 'DM Sans', sans-serif">
+    <div class="flex-1 flex items-center justify-center p-8" style="background: #f8f7f4">
+      <div class="w-full max-w-sm">
+        <!-- Mobile Logo -->
+        <div class="lg:hidden flex items-center gap-3 mb-8">
+          <div
+            class="w-9 h-9 rounded-xl flex items-center justify-center"
+            style="background: #1a6b3a"
+          >
+            <i class="pi pi-shopping-bag text-white"></i>
+          </div>
+          <span class="font-bold text-gray-900 text-xl">Kantin Mardira</span>
+        </div>
+
+        <h1 class="text-2xl font-bold text-gray-900 mb-1">Selamat datang</h1>
+        <p class="text-gray-400 text-sm mb-8">Masuk untuk melanjutkan ke sistem POS</p>
+
+        <form @submit.prevent="handleLogin" class="space-y-4">
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Email</label>
             <InputText
-              id="email"
               v-model="email"
               type="email"
-              placeholder="Masukkan email kasir"
+              placeholder="kasir@kantinmardira.com"
+              class="w-full"
               required
             />
           </div>
 
-          <div class="flex flex-col gap-2">
-            <label for="password">Password</label>
+          <div>
+            <label class="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
             <Password
-              id="password"
               v-model="password"
               :feedback="false"
               toggleMask
               placeholder="Masukkan password"
+              class="w-full"
+              inputClass="w-full"
               required
             />
           </div>
 
-          <small v-if="errorMessage" class="text-red-500">{{ errorMessage }}</small>
+          <div
+            v-if="errorMessage"
+            class="flex items-center gap-2 p-3 rounded-xl bg-red-50 text-red-600 text-sm"
+          >
+            <i class="pi pi-exclamation-circle"></i>
+            {{ errorMessage }}
+          </div>
 
-          <Button type="submit" label="Masuk" :loading="isLoading" class="w-full mt-2" />
+          <button
+            type="submit"
+            :disabled="isLoading"
+            class="w-full py-3 rounded-xl text-white font-semibold text-base transition-all hover:opacity-90 active:scale-95 disabled:opacity-50 mt-2"
+            style="background: #1a6b3a"
+          >
+            <i v-if="isLoading" class="pi pi-spin pi-spinner mr-2"></i>
+            {{ isLoading ? 'Memproses...' : 'Masuk' }}
+          </button>
         </form>
-      </template>
-    </Card>
+
+        <p class="text-center text-xs text-gray-400 mt-8">
+          Hubungi administrator jika lupa password
+        </p>
+      </div>
+    </div>
   </div>
 </template>
