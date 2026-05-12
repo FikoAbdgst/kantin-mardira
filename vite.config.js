@@ -12,7 +12,7 @@ export default defineConfig({
   server: {
     proxy: {
       '/api': {
-        target: 'http://kantin-mardira-api-production.up.railway.app',
+        target: 'https://kantin-mardira-api-production.up.railway.app',
         changeOrigin: true,
       }
     }

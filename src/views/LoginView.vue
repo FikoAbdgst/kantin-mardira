@@ -23,11 +23,18 @@ const handleLogin = async () => {
   try {
     const success = await authStore.login(email.value, password.value)
     if (success) {
-      router.push('/pos')
+      const role = authStore.user.role
+
+      if (role === 'admin') {
+        router.push('/admin/dashboard')
+      } else if (role === 'manager') {
+        router.push('/manager/reports')
+      } else {
+        router.push('/pos')
+      }
     }
   } catch (error) {
-    errorMessage.value =
-      error.response?.data?.message || 'Gagal login, periksa kembali email & password.'
+    errorMessage.value = error.response?.data?.message || 'Gagal login.'
   } finally {
     isLoading.value = false
   }

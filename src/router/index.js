@@ -17,6 +17,12 @@ const router = createRouter({
       component: PosView,
       meta: { requiresAuth: true },
     },
+    {
+      path: '/admin/dashboard',
+      name: 'admin-dashboard',
+      component: () => import('@/views/AdminDashboard.vue'),
+      meta: { requiresAuth: true, role: 'admin' }
+    }
   ],
 })
 
@@ -26,7 +32,8 @@ router.beforeEach((to, from, next) => {
   if (to.meta.requiresAuth && !authStore.token) {
     next({ name: 'login' })
   }
-  else if (to.name === 'login' && authStore.token) {
+  else if (to.meta.role && authStore.user.role !== to.meta.role) {
+    alert('Anda tidak memiliki hak akses untuk halaman ini.')
     next({ name: 'pos' })
   }
   else {
