@@ -243,8 +243,12 @@ onMounted(fetchMenus)
               class="flex items-center gap-3 p-2.5 rounded-xl bg-gray-50"
             >
               <img
-                :src="item.image_url || 'https://via.placeholder.com/60/f0f0f0/999?text=+'"
-                class="w-10 h-10 rounded-lg object-cover shrink-0"
+                :src="
+                  menu.image_url ||
+                  `https://ui-avatars.com/api/?name=${menu.name}&background=f0f0f0&color=1a6b3a&bold=true&size=300`
+                "
+                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                :alt="menu.name"
               />
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-medium text-gray-800 truncate">{{ item.name }}</p>

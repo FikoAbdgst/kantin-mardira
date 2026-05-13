@@ -58,7 +58,7 @@ const handleLogin = async () => {
             <InputText
               v-model="email"
               type="email"
-              placeholder="kasir@kantinmardira.com"
+              placeholder="cashier@kantinmardira.com"
               class="w-full"
               required
             />
