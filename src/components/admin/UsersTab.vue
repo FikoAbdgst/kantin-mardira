@@ -1,28 +1,19 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/utils/axios'
-import Button from 'primevue/button'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
-import Tag from 'primevue/tag'
 import Dialog from 'primevue/dialog'
 
 const users = ref([])
 const isLoading = ref(false)
-
-// State untuk Modal & Form
 const showAddModal = ref(false)
 const showEditModal = ref(false)
 const showDeleteModal = ref(false)
 const isSubmitting = ref(false)
-
-const form = ref({
-  name: '',
-  email: '',
-  password: '',
-  role: 'cashier',
-})
+const form = ref({ name: '', email: '', password: '', role: 'cashier' })
 const selectedUser = ref(null)
+const showPassword = ref(false)
 
 const fetchData = async () => {
   isLoading.value = true
@@ -30,41 +21,32 @@ const fetchData = async () => {
     const res = await api.get('/users')
     users.value = res.data.data || res.data
   } catch (e) {
-    console.error('Gagal memuat data users:', e)
+    console.error(e)
   } finally {
     isLoading.value = false
   }
 }
-
-// Actions
 const openAdd = () => {
   form.value = { name: '', email: '', password: '', role: 'cashier' }
+  showPassword.value = false
   showAddModal.value = true
 }
-
 const openEdit = (user) => {
   selectedUser.value = user
-
   const validRoles = ['admin', 'manager', 'cashier']
-
-  const safeRole = validRoles.includes(user.role) ? user.role : 'cashier'
-
   form.value = {
     name: user.name,
     email: user.email,
     password: '',
-    role: safeRole,
+    role: validRoles.includes(user.role) ? user.role : 'cashier',
   }
-
+  showPassword.value = false
   showEditModal.value = true
 }
-
 const openDelete = (user) => {
   selectedUser.value = user
   showDeleteModal.value = true
 }
-
-// API Calls
 const saveData = async () => {
   isSubmitting.value = true
   try {
@@ -72,40 +54,25 @@ const saveData = async () => {
     showAddModal.value = false
     fetchData()
   } catch (e) {
-    console.error('Gagal menambah user:', e)
+    console.error(e)
   } finally {
     isSubmitting.value = false
   }
 }
-
 const updateData = async () => {
   isSubmitting.value = true
   try {
     const payload = { ...form.value }
-
-    // Hapus properti password jika kosong agar tidak diupdate
-    if (!payload.password || payload.password.trim() === '') {
-      delete payload.password
-    }
-
+    if (!payload.password?.trim()) delete payload.password
     await api.put(`/users/${selectedUser.value.id}`, payload)
-
     showEditModal.value = false
     fetchData()
   } catch (e) {
-    // Tangkap dan tampilkan pesan spesifik dari backend
-    const errorData = e.response?.data
-    console.error('Gagal update user (Detail):', errorData)
-
-    // Tampilkan alert agar mudah dibaca
-    const errorMsg =
-      errorData?.message || errorData?.error || 'Format data tidak valid (400 Bad Request)'
-    alert(`Gagal update: ${errorMsg}`)
+    alert(`Error: ${e.response?.data?.message || 'Gagal update'}`)
   } finally {
     isSubmitting.value = false
   }
 }
-
 const deleteData = async () => {
   isSubmitting.value = true
   try {
@@ -113,198 +80,432 @@ const deleteData = async () => {
     showDeleteModal.value = false
     fetchData()
   } catch (e) {
-    console.error('Gagal hapus user:', e)
+    console.error(e)
   } finally {
     isSubmitting.value = false
   }
 }
-
-const roleSeverity = (role) => {
-  if (role === 'admin') return 'danger'
-  if (role === 'manager') return 'info'
-  return 'success'
+const roleStyle = (role) =>
+  ({
+    admin: { bg: 'bg-red-50 text-red-600 ring-1 ring-red-200', dot: 'bg-red-500' },
+    manager: { bg: 'bg-blue-50 text-blue-600 ring-1 ring-blue-200', dot: 'bg-blue-500' },
+    cashier: {
+      bg: 'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200',
+      dot: 'bg-emerald-500',
+    },
+  })[role] || { bg: 'bg-gray-100 text-gray-500', dot: 'bg-gray-400' }
+const avatarColor = (name) => {
+  const c = [
+    'bg-orange-100 text-orange-600',
+    'bg-blue-100 text-blue-600',
+    'bg-purple-100 text-purple-600',
+    'bg-teal-100 text-teal-600',
+    'bg-pink-100 text-pink-600',
+  ]
+  return c[(name?.charCodeAt(0) || 0) % c.length]
 }
+
+const roleOptions = [
+  { value: 'admin', label: 'Admin', desc: 'Akses penuh ke semua fitur', icon: 'pi-shield' },
+  { value: 'manager', label: 'Manager', desc: 'Lihat laporan & kelola stok', icon: 'pi-chart-bar' },
+  { value: 'cashier', label: 'Cashier', desc: 'Hanya akses transaksi kasir', icon: 'pi-wallet' },
+]
 
 onMounted(fetchData)
 </script>
 
 <template>
-  <div class="animate-fadein">
-    <div class="flex items-end justify-between mb-6">
+  <div>
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
       <div>
-        <h2 class="text-2xl font-bold tracking-tight text-gray-900">Manajemen User</h2>
-        <p class="mt-1 text-sm text-gray-500">Kelola hak akses akun karyawan dan staf kantin.</p>
+        <h3 class="text-xl font-bold text-gray-800">Manajemen User</h3>
+        <p class="text-sm text-gray-400 mt-0.5">Kelola hak akses akun karyawan dan staf kantin.</p>
       </div>
-      <Button
-        label="Tambah User"
-        icon="pi pi-plus"
-        class="bg-emerald-600 hover:bg-emerald-700 border-none shadow-sm"
+      <button
         @click="openAdd"
-      />
+        class="inline-flex items-center gap-2 px-4 py-2.5 bg-orange-400 hover:bg-orange-500 text-white text-sm font-semibold rounded-2xl shadow-sm transition-colors"
+      >
+        <i class="pi pi-plus text-xs"></i> Tambah User
+      </button>
     </div>
 
-    <div class="overflow-hidden bg-white border border-gray-200 shadow-sm rounded-2xl">
-      <DataTable :value="users" :loading="isLoading" hoverRows>
-        <Column field="name" header="Nama Lengkap">
+    <div class="bg-white rounded-3xl border border-amber-100 shadow-sm overflow-hidden">
+      <DataTable :value="users" :loading="isLoading" :rowHover="true">
+        <template #empty>
+          <div class="flex flex-col items-center justify-center py-16 text-gray-400">
+            <i class="pi pi-users text-4xl mb-3 text-amber-200"></i>
+            <p class="text-sm font-medium">Belum ada user terdaftar</p>
+          </div>
+        </template>
+        <Column field="name" header="Nama">
           <template #body="{ data }">
-            <span class="font-semibold text-gray-800">{{ data.name }}</span>
+            <div class="flex items-center gap-3">
+              <div
+                class="w-9 h-9 rounded-full flex items-center justify-center font-bold text-sm flex-shrink-0"
+                :class="avatarColor(data.name)"
+              >
+                {{ data.name?.charAt(0)?.toUpperCase() }}
+              </div>
+              <div>
+                <p class="font-semibold text-gray-800 leading-tight">{{ data.name }}</p>
+                <p class="text-xs text-gray-400">{{ data.email }}</p>
+              </div>
+            </div>
           </template>
         </Column>
-        <Column field="email" header="Email Akses"></Column>
         <Column field="role" header="Jabatan">
           <template #body="{ data }">
-            <Tag :value="data.role" :severity="roleSeverity(data.role)" class="uppercase" />
+            <span
+              class="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-full capitalize"
+              :class="roleStyle(data.role).bg"
+            >
+              <span class="w-1.5 h-1.5 rounded-full" :class="roleStyle(data.role).dot"></span>
+              {{ data.role }}
+            </span>
           </template>
         </Column>
-        <Column header="Aksi" style="width: 120px" align="center">
+        <Column header="Aksi" style="width: 100px" align="center">
           <template #body="{ data }">
-            <div class="flex justify-center gap-2">
-              <Button
-                icon="pi pi-pencil"
-                severity="info"
-                outlined
-                rounded
-                size="small"
+            <div class="flex justify-center gap-1.5">
+              <button
                 @click="openEdit(data)"
-              />
-              <Button
-                icon="pi pi-trash"
-                severity="danger"
-                outlined
-                rounded
-                size="small"
+                class="w-8 h-8 flex items-center justify-center rounded-xl text-blue-500 hover:bg-blue-50 transition-colors"
+              >
+                <i class="pi pi-pencil text-xs"></i>
+              </button>
+              <button
                 @click="openDelete(data)"
-              />
+                class="w-8 h-8 flex items-center justify-center rounded-xl text-red-400 hover:bg-red-50 transition-colors"
+              >
+                <i class="pi pi-trash text-xs"></i>
+              </button>
             </div>
           </template>
         </Column>
       </DataTable>
     </div>
 
+    <!-- Shared form content as reusable structure inside each modal -->
+
+    <!-- Add Modal -->
     <Dialog
       v-model:visible="showAddModal"
       modal
-      header="Tambah User Baru"
-      :style="{ width: '400px' }"
+      :showHeader="false"
+      :style="{ width: '460px', borderRadius: '1.25rem', overflow: 'hidden' }"
+      :pt="{
+        content: { style: 'padding: 0' },
+        root: { style: 'border-radius: 1.25rem; overflow: hidden' },
+      }"
     >
-      <div class="flex flex-col gap-4 pt-2">
-        <div>
-          <label class="block mb-1 text-sm font-medium">Nama Lengkap</label>
-          <input
-            v-model="form.name"
-            type="text"
-            class="w-full px-3 py-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
-          />
+      <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center">
+            <i class="pi pi-user-plus text-orange-500" style="font-size: 11px"></i>
+          </div>
+          <h3 class="text-base font-semibold text-gray-800">Tambah User Baru</h3>
         </div>
-        <div>
-          <label class="block mb-1 text-sm font-medium">Email</label>
-          <input
-            v-model="form.email"
-            type="email"
-            class="w-full px-3 py-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
-          />
-        </div>
-        <div>
-          <label class="block mb-1 text-sm font-medium">Password</label>
-          <input
-            v-model="form.password"
-            type="password"
-            class="w-full px-3 py-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
-          />
-        </div>
-        <div>
-          <label class="block mb-1 text-sm font-medium">Role / Jabatan</label>
-          <select
-            v-model="form.role"
-            class="w-full px-3 py-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
+        <button
+          @click="showAddModal = false"
+          class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 transition-colors"
+        >
+          <i class="pi pi-times" style="font-size: 11px"></i>
+        </button>
+      </div>
+
+      <div class="px-6 py-5 flex flex-col gap-4">
+        <!-- Nama -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider"
+            >Nama Lengkap</label
           >
-            <option value="admin">Admin</option>
-            <option value="manager">Manager</option>
-            <option value="cashier">Cashier</option>
-          </select>
+          <div class="relative">
+            <i
+              class="pi pi-user absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
+              style="font-size: 13px"
+            ></i>
+            <input
+              v-model="form.name"
+              type="text"
+              placeholder="Nama karyawan..."
+              class="w-full pl-9 pr-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 focus:bg-white transition-all placeholder-gray-300 text-gray-800"
+            />
+          </div>
+        </div>
+        <!-- Email -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Email</label>
+          <div class="relative">
+            <i
+              class="pi pi-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
+              style="font-size: 13px"
+            ></i>
+            <input
+              v-model="form.email"
+              type="email"
+              placeholder="email@contoh.com"
+              class="w-full pl-9 pr-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 focus:bg-white transition-all placeholder-gray-300 text-gray-800"
+            />
+          </div>
+        </div>
+        <!-- Password -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider"
+            >Password</label
+          >
+          <div class="relative">
+            <i
+              class="pi pi-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
+              style="font-size: 13px"
+            ></i>
+            <input
+              v-model="form.password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="Minimal 8 karakter"
+              class="w-full pl-9 pr-10 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 focus:bg-white transition-all placeholder-gray-300 text-gray-800"
+            />
+            <button
+              @click="showPassword = !showPassword"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <i
+                :class="`pi ${showPassword ? 'pi-eye-slash' : 'pi-eye'}`"
+                style="font-size: 13px"
+              ></i>
+            </button>
+          </div>
+        </div>
+        <!-- Role -->
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider"
+            >Role / Jabatan</label
+          >
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              v-for="opt in roleOptions"
+              :key="opt.value"
+              @click="form.role = opt.value"
+              class="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border transition-all text-center"
+              :class="
+                form.role === opt.value
+                  ? 'border-orange-300 bg-orange-50 ring-2 ring-orange-200'
+                  : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+              "
+            >
+              <i
+                :class="`pi ${opt.icon}`"
+                class="text-base"
+                :style="form.role === opt.value ? 'color: #f97316' : 'color: #9ca3af'"
+              ></i>
+              <span
+                class="text-xs font-semibold"
+                :class="form.role === opt.value ? 'text-orange-600' : 'text-gray-600'"
+                >{{ opt.label }}</span
+              >
+            </button>
+          </div>
+          <p class="text-xs text-gray-400 mt-0.5">
+            {{ roleOptions.find((r) => r.value === form.role)?.desc }}
+          </p>
         </div>
       </div>
-      <template #footer>
-        <Button label="Batal" text severity="secondary" @click="showAddModal = false" />
-        <Button
-          label="Simpan"
-          class="bg-emerald-600 border-none"
-          :loading="isSubmitting"
+
+      <div class="flex items-center justify-end gap-2 px-6 pb-5 pt-1">
+        <button
+          @click="showAddModal = false"
+          class="px-4 py-2.5 text-sm text-gray-500 hover:text-gray-700 font-medium transition-colors rounded-xl hover:bg-gray-50"
+        >
+          Batal
+        </button>
+        <button
           @click="saveData"
-        />
-      </template>
+          :disabled="isSubmitting"
+          class="inline-flex items-center gap-2 px-5 py-2.5 bg-orange-400 hover:bg-orange-500 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors disabled:opacity-60"
+        >
+          <i v-if="isSubmitting" class="pi pi-spin pi-spinner" style="font-size: 11px"></i>
+          <i v-else class="pi pi-check" style="font-size: 11px"></i>
+          Simpan
+        </button>
+      </div>
     </Dialog>
 
+    <!-- Edit Modal -->
     <Dialog
       v-model:visible="showEditModal"
       modal
-      header="Edit Data User"
-      :style="{ width: '400px' }"
+      :showHeader="false"
+      :style="{ width: '460px', borderRadius: '1.25rem', overflow: 'hidden' }"
+      :pt="{
+        content: { style: 'padding: 0' },
+        root: { style: 'border-radius: 1.25rem; overflow: hidden' },
+      }"
     >
-      <div class="flex flex-col gap-4 pt-2">
-        <div>
-          <label class="block mb-1 text-sm font-medium">Nama Lengkap</label>
-          <input
-            v-model="form.name"
-            type="text"
-            class="w-full px-3 py-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
-          />
+      <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+        <div class="flex items-center gap-2.5">
+          <div class="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
+            <i class="pi pi-user-edit text-blue-500" style="font-size: 11px"></i>
+          </div>
+          <h3 class="text-base font-semibold text-gray-800">Edit Data User</h3>
         </div>
-        <div>
-          <label class="block mb-1 text-sm font-medium">Email</label>
-          <input
-            v-model="form.email"
-            type="email"
-            class="w-full px-3 py-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
-          />
-        </div>
-        <div>
-          <label class="block mb-1 text-sm font-medium"
-            >Password (Kosongkan jika tidak diubah)</label
+        <button
+          @click="showEditModal = false"
+          class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 transition-colors"
+        >
+          <i class="pi pi-times" style="font-size: 11px"></i>
+        </button>
+      </div>
+
+      <div class="px-6 py-5 flex flex-col gap-4">
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider"
+            >Nama Lengkap</label
           >
-          <input
-            v-model="form.password"
-            type="password"
-            class="w-full px-3 py-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
-          />
+          <div class="relative">
+            <i
+              class="pi pi-user absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
+              style="font-size: 13px"
+            ></i>
+            <input
+              v-model="form.name"
+              type="text"
+              class="w-full pl-9 pr-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 focus:bg-white transition-all text-gray-800"
+            />
+          </div>
         </div>
-        <div>
-          <label class="block mb-1 text-sm font-medium">Role / Jabatan</label>
-          <select
-            v-model="form.role"
-            class="w-full px-3 py-2 border rounded-lg focus:ring-emerald-500 focus:border-emerald-500"
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Email</label>
+          <div class="relative">
+            <i
+              class="pi pi-envelope absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
+              style="font-size: 13px"
+            ></i>
+            <input
+              v-model="form.email"
+              type="email"
+              class="w-full pl-9 pr-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 focus:bg-white transition-all text-gray-800"
+            />
+          </div>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">
+            Password
+            <span class="ml-1 normal-case font-normal text-gray-300"
+              >(kosongkan jika tidak diubah)</span
+            >
+          </label>
+          <div class="relative">
+            <i
+              class="pi pi-lock absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
+              style="font-size: 13px"
+            ></i>
+            <input
+              v-model="form.password"
+              :type="showPassword ? 'text' : 'password'"
+              placeholder="••••••••"
+              class="w-full pl-9 pr-10 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 focus:bg-white transition-all placeholder-gray-300 text-gray-800"
+            />
+            <button
+              @click="showPassword = !showPassword"
+              class="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <i
+                :class="`pi ${showPassword ? 'pi-eye-slash' : 'pi-eye'}`"
+                style="font-size: 13px"
+              ></i>
+            </button>
+          </div>
+        </div>
+        <div class="flex flex-col gap-1.5">
+          <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider"
+            >Role / Jabatan</label
           >
-            <option value="admin">Admin</option>
-            <option value="manager">Manager</option>
-            <option value="cashier">Cashier</option>
-          </select>
+          <div class="grid grid-cols-3 gap-2">
+            <button
+              v-for="opt in roleOptions"
+              :key="opt.value"
+              @click="form.role = opt.value"
+              class="flex flex-col items-center gap-1.5 py-3 px-2 rounded-xl border transition-all text-center"
+              :class="
+                form.role === opt.value
+                  ? 'border-orange-300 bg-orange-50 ring-2 ring-orange-200'
+                  : 'border-gray-200 bg-gray-50 hover:bg-gray-100'
+              "
+            >
+              <i
+                :class="`pi ${opt.icon}`"
+                class="text-base"
+                :style="form.role === opt.value ? 'color: #f97316' : 'color: #9ca3af'"
+              ></i>
+              <span
+                class="text-xs font-semibold"
+                :class="form.role === opt.value ? 'text-orange-600' : 'text-gray-600'"
+                >{{ opt.label }}</span
+              >
+            </button>
+          </div>
+          <p class="text-xs text-gray-400 mt-0.5">
+            {{ roleOptions.find((r) => r.value === form.role)?.desc }}
+          </p>
         </div>
       </div>
-      <template #footer>
-        <Button label="Batal" text severity="secondary" @click="showEditModal = false" />
-        <Button
-          label="Update"
-          class="bg-blue-600 border-none"
-          :loading="isSubmitting"
+
+      <div class="flex items-center justify-end gap-2 px-6 pb-5 pt-1">
+        <button
+          @click="showEditModal = false"
+          class="px-4 py-2.5 text-sm text-gray-500 hover:text-gray-700 font-medium transition-colors rounded-xl hover:bg-gray-50"
+        >
+          Batal
+        </button>
+        <button
           @click="updateData"
-        />
-      </template>
+          :disabled="isSubmitting"
+          class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-500 hover:bg-blue-600 text-white text-sm font-semibold rounded-xl shadow-sm transition-colors disabled:opacity-60"
+        >
+          <i v-if="isSubmitting" class="pi pi-spin pi-spinner" style="font-size: 11px"></i>
+          <i v-else class="pi pi-check" style="font-size: 11px"></i>
+          Update
+        </button>
+      </div>
     </Dialog>
 
+    <!-- Delete Modal -->
     <Dialog
       v-model:visible="showDeleteModal"
       modal
-      header="Konfirmasi Hapus"
-      :style="{ width: '400px' }"
+      :showHeader="false"
+      :style="{ width: '380px', borderRadius: '1.25rem', overflow: 'hidden' }"
+      :pt="{
+        content: { style: 'padding: 0' },
+        root: { style: 'border-radius: 1.25rem; overflow: hidden' },
+      }"
     >
-      <p class="pt-2 text-gray-700">
-        Apakah Anda yakin ingin menghapus user <b>{{ selectedUser?.name }}</b
-        >?
-      </p>
-      <template #footer>
-        <Button label="Batal" text severity="secondary" @click="showDeleteModal = false" />
-        <Button label="Hapus" severity="danger" :loading="isSubmitting" @click="deleteData" />
-      </template>
+      <div class="px-6 pt-6 pb-4 flex flex-col items-center text-center gap-3">
+        <div class="w-12 h-12 rounded-2xl bg-red-100 flex items-center justify-center">
+          <i class="pi pi-user-minus text-red-500 text-lg"></i>
+        </div>
+        <div>
+          <p class="font-semibold text-gray-800">Hapus user ini?</p>
+          <p class="text-sm text-gray-400 mt-1">
+            Akun <b class="text-gray-700">{{ selectedUser?.name }}</b> akan dihapus permanen.
+          </p>
+        </div>
+      </div>
+      <div class="flex gap-2 px-6 pb-6">
+        <button
+          @click="showDeleteModal = false"
+          class="flex-1 py-2.5 text-sm text-gray-600 font-medium bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+        >
+          Batal
+        </button>
+        <button
+          @click="deleteData"
+          :disabled="isSubmitting"
+          class="flex-1 py-2.5 text-sm text-white font-semibold bg-red-500 hover:bg-red-600 rounded-xl shadow-sm transition-colors disabled:opacity-60"
+        >
+          <i v-if="isSubmitting" class="pi pi-spin pi-spinner text-xs mr-1"></i>
+          Hapus
+        </button>
+      </div>
     </Dialog>
   </div>
 </template>
