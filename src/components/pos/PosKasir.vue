@@ -22,6 +22,9 @@ const paidAmount = ref(0)
 const customerName = ref('')
 const isSubmitting = ref(false)
 
+// Mobile cart sheet
+const isCartSheetOpen = ref(false)
+
 const formatRupiah = (val) =>
   new Intl.NumberFormat('id-ID', {
     style: 'currency',
@@ -60,6 +63,7 @@ const openCheckout = () => {
   customerName.value = ''
   paidAmount.value = cartStore.totalPrice
   selectedPayment.value = 'cash'
+  isCartSheetOpen.value = false
   isCheckoutVisible.value = true
 }
 
@@ -94,12 +98,11 @@ onMounted(fetchMenus)
 </script>
 
 <template>
-  <div class="flex flex-1 overflow-hidden">
+  <div class="flex flex-1 overflow-hidden min-h-0 relative">
     <!-- ===== LEFT: Menu Grid ===== -->
-    <section class="flex flex-col flex-1 overflow-hidden bg-amber-50">
+    <section class="flex flex-col flex-1 overflow-hidden bg-amber-50 min-w-0">
       <!-- Search + Filter -->
-      <div class="px-5 lg:px-6 pt-5 pb-3 bg-white border-b border-amber-100">
-        <!-- Search -->
+      <div class="px-4 sm:px-5 lg:px-6 pt-4 sm:pt-5 pb-3 bg-white border-b border-amber-100">
         <div class="relative mb-3">
           <i
             class="pi pi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
@@ -119,7 +122,7 @@ onMounted(fetchMenus)
             v-for="cat in categories"
             :key="cat"
             @click="activeCategory = cat"
-            class="shrink-0 px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
+            class="shrink-0 px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
             :class="
               activeCategory === cat
                 ? 'bg-orange-400 text-white shadow-sm'
@@ -131,16 +134,19 @@ onMounted(fetchMenus)
         </div>
       </div>
 
-      <!-- Menu Cards -->
-      <div class="flex-1 p-5 overflow-y-auto">
+      <!-- Menu Cards — extra bottom padding on mobile for FAB -->
+      <div class="flex-1 p-4 sm:p-5 overflow-y-auto pb-28 sm:pb-5">
         <!-- Loading skeleton -->
-        <div v-if="isLoading" class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+        <div
+          v-if="isLoading"
+          class="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+        >
           <div
             v-for="i in 8"
             :key="i"
             class="bg-white border border-amber-100 rounded-3xl overflow-hidden animate-pulse"
           >
-            <div class="h-28 bg-gray-100"></div>
+            <div class="h-24 sm:h-28 bg-gray-100"></div>
             <div class="p-3 space-y-2">
               <div class="h-3 bg-gray-100 rounded w-3/4"></div>
               <div class="h-3 bg-gray-100 rounded w-1/2"></div>
@@ -158,7 +164,7 @@ onMounted(fetchMenus)
         </div>
 
         <!-- Grid -->
-        <div v-else class="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
+        <div v-else class="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           <div
             v-for="menu in filteredMenus"
             :key="menu.id"
@@ -171,7 +177,7 @@ onMounted(fetchMenus)
             "
           >
             <!-- Image -->
-            <div class="relative overflow-hidden" style="height: 116px">
+            <div class="relative overflow-hidden" style="height: 96px">
               <img
                 :src="
                   menu.image_url ||
@@ -181,7 +187,6 @@ onMounted(fetchMenus)
                 :class="!isMenuInCart(menu.id) ? 'group-hover:scale-105' : ''"
                 :alt="menu.name"
               />
-              <!-- In cart overlay -->
               <div
                 v-if="isMenuInCart(menu.id)"
                 class="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-[1px]"
@@ -195,11 +200,13 @@ onMounted(fetchMenus)
             </div>
 
             <!-- Info -->
-            <div class="p-3">
-              <p class="text-sm font-semibold text-gray-800 truncate leading-tight">
+            <div class="p-2.5 sm:p-3">
+              <p class="text-xs sm:text-sm font-semibold text-gray-800 truncate leading-tight">
                 {{ menu.name }}
               </p>
-              <p class="mt-1 text-sm font-bold text-orange-500">{{ formatRupiah(menu.price) }}</p>
+              <p class="mt-0.5 text-xs sm:text-sm font-bold text-orange-500">
+                {{ formatRupiah(menu.price) }}
+              </p>
               <p class="mt-0.5 text-xs text-gray-400">Stok: {{ menu.stock }}</p>
             </div>
           </div>
@@ -207,8 +214,8 @@ onMounted(fetchMenus)
       </div>
     </section>
 
-    <!-- ===== RIGHT: Cart Sidebar ===== -->
-    <aside class="flex flex-col w-80 bg-white border-l border-amber-100">
+    <!-- ===== RIGHT: Cart Sidebar (Desktop only lg+) ===== -->
+    <aside class="hidden lg:flex flex-col w-80 bg-white border-l border-amber-100 flex-shrink-0">
       <!-- Cart Header -->
       <div class="px-5 py-4 border-b border-amber-100">
         <div class="flex items-center justify-between">
@@ -230,7 +237,6 @@ onMounted(fetchMenus)
 
       <!-- Cart Items -->
       <div class="flex-1 px-5 py-3 overflow-y-auto">
-        <!-- Empty cart -->
         <div
           v-if="cartStore.items.length === 0"
           class="flex flex-col items-center justify-center h-full gap-2 text-gray-300"
@@ -242,23 +248,18 @@ onMounted(fetchMenus)
           <p class="text-xs text-gray-300">Pilih menu dari daftar</p>
         </div>
 
-        <!-- Items list -->
         <div v-else class="space-y-2.5">
           <div
             v-for="item in cartStore.items"
             :key="item.id"
             class="flex items-center gap-3 p-2.5 rounded-2xl bg-amber-50 border border-amber-100"
           >
-            <!-- Delete -->
             <button
               @click="cartStore.deleteItem(item.id)"
               class="w-7 h-7 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-xl transition-colors flex-shrink-0"
-              title="Hapus"
             >
               <i class="pi pi-trash text-xs"></i>
             </button>
-
-            <!-- Image -->
             <img
               :src="
                 item.image_url ||
@@ -267,16 +268,12 @@ onMounted(fetchMenus)
               class="w-9 h-9 object-cover rounded-xl border border-amber-100 flex-shrink-0"
               :alt="item.name"
             />
-
-            <!-- Name + Price -->
             <div class="flex-1 min-w-0">
               <p class="text-sm font-semibold text-gray-800 truncate">{{ item.name }}</p>
               <p class="text-xs font-bold text-orange-500">
                 {{ formatRupiah(item.price * item.qty) }}
               </p>
             </div>
-
-            <!-- Qty controls -->
             <div class="flex items-center gap-1.5 flex-shrink-0">
               <button
                 @click="cartStore.removeFromCart(item.id)"
@@ -325,19 +322,174 @@ onMounted(fetchMenus)
       </div>
     </aside>
 
+    <!-- ===== MOBILE: Floating Cart Button (< lg) ===== -->
+    <div
+      class="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-sm"
+    >
+      <button
+        v-if="cartStore.items.length > 0"
+        @click="isCartSheetOpen = true"
+        class="w-full flex items-center justify-between px-4 py-3.5 bg-orange-400 hover:bg-orange-500 rounded-2xl shadow-lg text-white transition-all active:scale-95"
+      >
+        <div class="flex items-center gap-2">
+          <span
+            class="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center text-xs font-bold"
+          >
+            {{ cartStore.items.reduce((s, i) => s + i.qty, 0) }}
+          </span>
+          <span class="text-sm font-semibold">Lihat Pesanan</span>
+        </div>
+        <span class="text-sm font-bold">{{ formatRupiah(cartStore.totalPrice) }}</span>
+      </button>
+    </div>
+
+    <!-- ===== MOBILE: Cart Bottom Sheet ===== -->
+    <Teleport to="body">
+      <!-- Backdrop -->
+      <Transition name="fade">
+        <div
+          v-if="isCartSheetOpen"
+          class="lg:hidden fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"
+          @click="isCartSheetOpen = false"
+        />
+      </Transition>
+
+      <!-- Sheet -->
+      <Transition name="slide-up">
+        <div
+          v-if="isCartSheetOpen"
+          class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col"
+        >
+          <!-- Sheet Handle -->
+          <div class="flex justify-center pt-3 pb-1">
+            <div class="w-10 h-1 bg-gray-200 rounded-full"></div>
+          </div>
+
+          <!-- Sheet Header -->
+          <div class="flex items-center justify-between px-5 py-3 border-b border-amber-100">
+            <div class="flex items-center gap-2">
+              <div class="w-7 h-7 rounded-xl bg-orange-100 flex items-center justify-center">
+                <i class="pi pi-shopping-cart text-orange-500" style="font-size: 12px"></i>
+              </div>
+              <h2 class="font-bold text-gray-800">Pesanan</h2>
+            </div>
+            <div class="flex items-center gap-3">
+              <span
+                v-if="cartStore.items.length > 0"
+                class="text-xs text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                @click="cartStore.clearCart()"
+              >
+                Hapus semua
+              </span>
+              <button
+                @click="isCartSheetOpen = false"
+                class="w-7 h-7 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100"
+              >
+                <i class="pi pi-times" style="font-size: 11px"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Sheet Items -->
+          <div class="flex-1 px-5 py-3 overflow-y-auto">
+            <div
+              v-if="cartStore.items.length === 0"
+              class="flex flex-col items-center justify-center py-10 gap-2"
+            >
+              <i class="pi pi-shopping-cart text-amber-200 text-3xl"></i>
+              <p class="text-sm text-gray-400">Keranjang kosong</p>
+            </div>
+            <div v-else class="space-y-2.5">
+              <div
+                v-for="item in cartStore.items"
+                :key="item.id"
+                class="flex items-center gap-3 p-2.5 rounded-2xl bg-amber-50 border border-amber-100"
+              >
+                <button
+                  @click="cartStore.deleteItem(item.id)"
+                  class="w-7 h-7 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-xl flex-shrink-0"
+                >
+                  <i class="pi pi-trash text-xs"></i>
+                </button>
+                <img
+                  :src="
+                    item.image_url ||
+                    `https://ui-avatars.com/api/?name=${item.name}&background=fff3e0&color=e07b00&bold=true`
+                  "
+                  class="w-9 h-9 object-cover rounded-xl border border-amber-100 flex-shrink-0"
+                  :alt="item.name"
+                />
+                <div class="flex-1 min-w-0">
+                  <p class="text-sm font-semibold text-gray-800 truncate">{{ item.name }}</p>
+                  <p class="text-xs font-bold text-orange-500">
+                    {{ formatRupiah(item.price * item.qty) }}
+                  </p>
+                </div>
+                <div class="flex items-center gap-1.5 flex-shrink-0">
+                  <button
+                    @click="cartStore.removeFromCart(item.id)"
+                    :disabled="item.qty === 1"
+                    class="w-7 h-7 rounded-xl text-sm flex items-center justify-center transition-colors"
+                    :class="
+                      item.qty === 1
+                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
+                        : 'bg-white border border-gray-200 text-gray-600'
+                    "
+                  >
+                    <i class="pi pi-minus" style="font-size: 9px"></i>
+                  </button>
+                  <span class="w-6 text-sm font-bold text-center text-gray-800">{{
+                    item.qty
+                  }}</span>
+                  <button
+                    @click="cartStore.addToCart(item)"
+                    class="w-7 h-7 rounded-xl text-sm flex items-center justify-center bg-orange-400 text-white"
+                  >
+                    <i class="pi pi-plus" style="font-size: 9px"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Sheet Footer -->
+          <div class="px-5 py-4 border-t border-amber-100 bg-white">
+            <div class="flex justify-between font-bold text-gray-900 mb-3">
+              <span>Total</span>
+              <span class="text-xl text-orange-500">{{ formatRupiah(cartStore.totalPrice) }}</span>
+            </div>
+            <button
+              @click="openCheckout"
+              :disabled="cartStore.items.length === 0"
+              class="w-full py-3.5 rounded-2xl font-bold text-white text-sm bg-orange-400 hover:bg-orange-500 transition-all shadow-sm disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+            >
+              <i class="pi pi-credit-card mr-2" style="font-size: 13px"></i>
+              Proses Pembayaran
+            </button>
+          </div>
+        </div>
+      </Transition>
+    </Teleport>
+
     <!-- ===== Checkout Dialog ===== -->
     <Dialog
       v-model:visible="isCheckoutVisible"
       modal
       :showHeader="false"
-      :style="{ width: '26rem', borderRadius: '1.25rem', overflow: 'hidden' }"
+      :style="{
+        width: 'min(26rem, calc(100vw - 2rem))',
+        borderRadius: '1.25rem',
+        overflow: 'hidden',
+      }"
       :pt="{
         content: { style: 'padding: 0' },
         root: { style: 'border-radius: 1.25rem; overflow: hidden' },
       }"
     >
       <!-- Dialog Header -->
-      <div class="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100">
+      <div
+        class="flex items-center justify-between px-5 sm:px-6 pt-5 pb-4 border-b border-gray-100"
+      >
         <div class="flex items-center gap-2.5">
           <div class="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center">
             <i class="pi pi-credit-card text-orange-500" style="font-size: 11px"></i>
@@ -346,19 +498,19 @@ onMounted(fetchMenus)
         </div>
         <button
           @click="isCheckoutVisible = false"
-          class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100 transition-colors"
+          class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100"
         >
           <i class="pi pi-times" style="font-size: 11px"></i>
         </button>
       </div>
 
-      <div class="px-6 py-5 space-y-4">
+      <div class="px-5 sm:px-6 py-5 space-y-4">
         <!-- Total Banner -->
         <div
           class="flex items-center justify-between p-4 bg-amber-50 rounded-2xl ring-1 ring-amber-100"
         >
           <span class="text-sm text-gray-500">Total Tagihan</span>
-          <span class="text-2xl font-bold text-orange-500">{{
+          <span class="text-xl sm:text-2xl font-bold text-orange-500">{{
             formatRupiah(cartStore.totalPrice)
           }}</span>
         </div>
@@ -442,7 +594,7 @@ onMounted(fetchMenus)
       </div>
 
       <!-- Footer Buttons -->
-      <div class="flex gap-2 px-6 pb-5 pt-1">
+      <div class="flex gap-2 px-5 sm:px-6 pb-5 pt-1">
         <button
           @click="isCheckoutVisible = false"
           class="flex-1 py-2.5 text-sm text-gray-600 font-medium bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
@@ -462,3 +614,33 @@ onMounted(fetchMenus)
     </Dialog>
   </div>
 </template>
+
+<style scoped>
+/* Bottom sheet transitions */
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.slide-up-enter-active,
+.slide-up-leave-active {
+  transition: transform 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+.slide-up-enter-from,
+.slide-up-leave-to {
+  transform: translateY(100%);
+}
+
+/* Hide scrollbar for category pills */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+</style>
