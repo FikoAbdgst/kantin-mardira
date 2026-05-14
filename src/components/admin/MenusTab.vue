@@ -2,6 +2,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/utils/axios'
 import { getImageUrl, handleImageError } from '@/utils/image'
+import { showError, showWarning } from '@/utils/notify'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
@@ -47,7 +48,7 @@ const handleFileUpload = (e) => {
   const f = e.target.files[0]
   if (!f) return
   if (f.size > 1024 * 1024) {
-    alert('Maks. 1MB')
+    showWarning('Maks. 1MB')
     e.target.value = ''
     return
   }
@@ -117,7 +118,7 @@ const saveData = async () => {
     fetchData()
   } catch (e) {
     console.error(e)
-    alert(e.response?.data?.message || 'Terjadi kesalahan saat menyimpan menu')
+    showError(e.response?.data?.message || 'Terjadi kesalahan saat menyimpan menu')
   } finally {
     isSubmitting.value = false
   }
@@ -135,7 +136,7 @@ const updateData = async () => {
     fetchData()
   } catch (e) {
     console.error(e)
-    alert(e.response?.data?.message || 'Terjadi kesalahan saat mengubah menu')
+    showError(e.response?.data?.message || 'Terjadi kesalahan saat mengubah menu')
   } finally {
     isSubmitting.value = false
   }

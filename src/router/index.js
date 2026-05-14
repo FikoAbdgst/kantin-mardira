@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
+import { showWarning } from '@/utils/notify'
 import LoginView from '@/views/LoginView.vue'
 import PosView from '@/views/PosView.vue'
 import AdminView from '@/views/AdminView.vue'
@@ -54,7 +55,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.meta.allowedRoles && !to.meta.allowedRoles.includes(userRole)) {
-    alert('Akses Ditolak: Anda tidak memiliki wewenang untuk halaman ini.')
+    showWarning('Akses ditolak', 'Anda tidak memiliki wewenang untuk halaman ini.')
     if (userRole === 'manager') return next({ name: 'manager' })
     if (userRole === 'admin') return next({ name: 'admin' })
     return next({ name: 'pos' })

@@ -3,6 +3,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import api from '@/utils/axios'
 import { getImageUrl, handleImageError } from '@/utils/image'
+import { showError, showSuccess } from '@/utils/notify'
 
 import InputNumber from 'primevue/inputnumber'
 import Dialog from 'primevue/dialog'
@@ -79,7 +80,7 @@ const openCheckout = () => {
 
 const submitTransaction = async () => {
   if (selectedPayment.value === 'cash' && paidAmount.value < cartStore.totalPrice) {
-    alert('Uang tunai kurang dari total belanja!')
+    showError('Uang tunai kurang dari total belanja!')
     return
   }
   isSubmitting.value = true
@@ -92,13 +93,13 @@ const submitTransaction = async () => {
     }
     const res = await api.post('/transactions', payload)
     if (res.data.success) {
-      alert(`Transaksi Berhasil!\nKembalian: ${formatRupiah(res.data.data.change_amount || 0)}`)
+      showSuccess('Transaksi berhasil', `Kembalian: ${formatRupiah(res.data.data.change_amount || 0)}`)
       cartStore.clearCart()
       isCheckoutVisible.value = false
       emit('transaction-success')
     }
   } catch (e) {
-    alert(e.response?.data?.message || 'Terjadi kesalahan saat checkout')
+    showError(e.response?.data?.message || 'Terjadi kesalahan saat checkout')
   } finally {
     isSubmitting.value = false
   }

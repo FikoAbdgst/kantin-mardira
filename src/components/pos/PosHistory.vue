@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/utils/axios'
+import { showError } from '@/utils/notify'
 
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -44,7 +45,7 @@ const openHistoryDetail = async (id) => {
     selectedTransaction.value = res.data.data
     isHistoryDetailVisible.value = true
   } catch (e) {
-    alert('Gagal memuat detail transaksi')
+    showError('Gagal memuat detail transaksi')
   } finally {
     fetchingDetailId.value = null
   }

@@ -1,6 +1,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '@/utils/axios'
+import { showError } from '@/utils/notify'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
@@ -68,7 +69,7 @@ const updateData = async () => {
     showEditModal.value = false
     fetchData()
   } catch (e) {
-    alert(`Error: ${e.response?.data?.message || 'Gagal update'}`)
+    showError(`Error: ${e.response?.data?.message || 'Gagal update'}`)
   } finally {
     isSubmitting.value = false
   }

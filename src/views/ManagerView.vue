@@ -3,6 +3,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useAuthStore } from '@/stores/auth'
 import { useRouter } from 'vue-router'
 import api from '@/utils/axios'
+import { showError, showWarning } from '@/utils/notify'
 
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -123,12 +124,12 @@ const generatePdfPreview = async () => {
 
     // Logika pengkondisian untuk 3 tipe laporan
     if (reportType.value === 'daily') {
-      if (!reportDate.value) return alert('Pilih tanggal terlebih dahulu!')
+      if (!reportDate.value) return showWarning('Pilih tanggal terlebih dahulu!')
       endpoint = `/reports/daily/pdf?date=${reportDate.value}`
       filename = `Laporan_Harian_Kantin_${reportDate.value}.pdf`
     } else if (reportType.value === 'weekly') {
       if (!reportStartDate.value || !reportEndDate.value) {
-        return alert('Pilih tanggal mulai dan tanggal akhir terlebih dahulu!')
+        return showWarning('Pilih tanggal mulai dan tanggal akhir terlebih dahulu!')
       }
       endpoint = `/reports/weekly/pdf?start_date=${reportStartDate.value}&end_date=${reportEndDate.value}`
       filename = `Laporan_Mingguan_Kantin_${reportStartDate.value}_sd_${reportEndDate.value}.pdf`
@@ -142,7 +143,7 @@ const generatePdfPreview = async () => {
     pdfPreviewUrl.value = window.URL.createObjectURL(blob)
     pdfFilename.value = filename
   } catch (e) {
-    alert('Gagal memuat dokumen PDF. Pastikan terdapat data transaksi pada waktu tersebut.')
+    showError('Gagal memuat dokumen PDF. Pastikan terdapat data transaksi pada waktu tersebut.')
   } finally {
     isGeneratingPdf.value = false
   }
