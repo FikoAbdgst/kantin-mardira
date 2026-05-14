@@ -120,27 +120,6 @@ const handleLogin = async () => {
                 stroke-opacity="0.3"
               />
               <!-- Price display -->
-              <rect
-                x="110"
-                y="100"
-                width="100"
-                height="40"
-                rx="10"
-                fill="#1c1c1a"
-                stroke="#f97316"
-                stroke-width="1.5"
-              />
-              <text
-                x="160"
-                y="126"
-                text-anchor="middle"
-                font-family="monospace"
-                font-size="14"
-                font-weight="700"
-                fill="#f97316"
-              >
-                Rp 25.000
-              </text>
 
               <!-- Food items on tray -->
               <!-- Bowl -->
@@ -278,7 +257,7 @@ const handleLogin = async () => {
         </div>
 
         <!-- Form header -->
-        <div class="mb-8">
+        <div class="mb-8 hidden md:block">
           <h2 class="text-2xl sm:text-3xl font-extrabold text-gray-900 leading-tight">
             Selamat<br />datang kembali
           </h2>
