@@ -177,7 +177,7 @@ const navigate = (key) => {
       <!-- Footer -->
       <footer class="px-8 py-3 border-t border-amber-100 bg-white">
         <p class="text-xs text-center text-gray-400">
-          © 2025 Kantin Mardira · v1.0.0 · Fiko Abdigusti
+          © 2025 Kantin Mardira Fiko Abdigusti & Teguh Bagas M
         </p>
       </footer>
     </div>

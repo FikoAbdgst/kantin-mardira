@@ -1,6 +1,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import api from '@/utils/axios'
+import { getImageUrl, handleImageError } from '@/utils/image'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
 import Dialog from 'primevue/dialog'
@@ -193,13 +194,11 @@ onMounted(fetchData)
                 class="w-10 h-10 rounded-2xl overflow-hidden bg-amber-50 border border-amber-100 flex-shrink-0"
               >
                 <img
-                  v-if="data.image_url"
-                  :src="data.image_url.replace('http://localhost:8080', '')"
+                  :src="getImageUrl(data?.image_url)"
+                  @error="handleImageError"
                   class="w-full h-full object-cover"
+                  :alt="data.name"
                 />
-                <div v-else class="w-full h-full flex items-center justify-center">
-                  <i class="pi pi-image text-amber-300 text-xs"></i>
-                </div>
               </div>
               <span class="font-semibold text-gray-800">{{ data.name }}</span>
             </div>
@@ -401,14 +400,19 @@ onMounted(fetchData)
               <span class="text-sm text-gray-400">Klik untuk unggah gambar</span>
               <input type="file" accept="image/*" @change="handleFileUpload" class="hidden" />
             </label>
-            <div v-if="form.image_url" class="flex items-center gap-3 mt-1">
+            <div class="flex items-center gap-3 mt-1">
               <img
-                :src="form.image_url.replace('http://localhost:8080', '')"
+                :src="getImageUrl(form?.image_url)"
+                @error="handleImageError"
                 class="w-14 h-14 object-cover rounded-xl border border-amber-100"
+                alt="Preview gambar menu"
               />
               <div>
-                <p class="text-xs font-medium text-gray-600">Gambar terpilih</p>
+                <p class="text-xs font-medium text-gray-600">
+                  {{ form.image_url ? 'Gambar terpilih' : 'Default image aktif' }}
+                </p>
                 <button
+                  v-if="form.image_url"
                   @click="form.image_url = ''"
                   class="text-xs text-red-400 hover:text-red-500 transition-colors"
                 >

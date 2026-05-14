@@ -2,6 +2,7 @@
 import { ref, computed, onMounted } from 'vue'
 import { useCartStore } from '@/stores/cart'
 import api from '@/utils/axios'
+import { getImageUrl, handleImageError } from '@/utils/image'
 
 import InputNumber from 'primevue/inputnumber'
 import Dialog from 'primevue/dialog'
@@ -184,11 +185,10 @@ onMounted(() => {
           >
             <div class="relative overflow-hidden" style="height: 96px">
               <img
-                :src="
-                  menu.image_url
-                    ? menu.image_url.replace('http://localhost:8080', '')
-                    : `https://ui-avatars.com/api/?name=${menu.name}&background=fff3e0&color=e07b00&bold=true&size=300`
-                "
+                :src="getImageUrl(menu?.image_url)"
+                @error="handleImageError"
+                loading="lazy"
+                decoding="async"
                 class="object-cover w-full h-full transition-transform duration-300"
                 :class="!isMenuInCart(menu.id) ? 'group-hover:scale-105' : ''"
                 :alt="menu.name"
@@ -263,10 +263,10 @@ onMounted(() => {
               <i class="pi pi-trash text-xs"></i>
             </button>
             <img
-              :src="
-                item.image_url ||
-                `https://ui-avatars.com/api/?name=${item.name}&background=fff3e0&color=e07b00&bold=true`
-              "
+              :src="getImageUrl(item?.image_url)"
+              @error="handleImageError"
+              loading="lazy"
+              decoding="async"
               class="w-9 h-9 object-cover rounded-xl border border-amber-100 flex-shrink-0"
               :alt="item.name"
             />
@@ -406,10 +406,10 @@ onMounted(() => {
                   <i class="pi pi-trash text-xs"></i>
                 </button>
                 <img
-                  :src="
-                    item.image_url ||
-                    `https://ui-avatars.com/api/?name=${item.name}&background=fff3e0&color=e07b00&bold=true`
-                  "
+                  :src="getImageUrl(item?.image_url)"
+                  @error="handleImageError"
+                  loading="lazy"
+                  decoding="async"
                   class="w-9 h-9 object-cover rounded-xl border border-amber-100 flex-shrink-0"
                   :alt="item.name"
                 />
