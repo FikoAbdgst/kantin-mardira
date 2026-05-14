@@ -1,5 +1,5 @@
 <script setup>
-import { ref, reactive, onMounted } from 'vue' // 1. Tambahkan reactive
+import { ref, reactive, onMounted } from 'vue'
 import api from '@/utils/axios'
 import DataTable from 'primevue/datatable'
 import Column from 'primevue/column'
@@ -9,7 +9,6 @@ const menus = ref([])
 const categories = ref([])
 const isLoading = ref(false)
 
-// 2. Ganti ref terpisah menjadi reactive object
 const modals = reactive({
   add: false,
   edit: false,
@@ -26,6 +25,9 @@ const form = ref({
   image_url: '',
 })
 const selectedMenu = ref(null)
+
+// 1. Tambahkan state untuk menyimpan file gambar asli
+const selectedImageFile = ref(null)
 
 const fetchData = async () => {
   isLoading.value = true
@@ -48,6 +50,11 @@ const handleFileUpload = (e) => {
     e.target.value = ''
     return
   }
+
+  // 2. Simpan file aslinya untuk dikirim ke backend
+  selectedImageFile.value = f
+
+  // Gunakan FileReader hanya untuk menampilkan PREVIEW di layar form
   const r = new FileReader()
   r.onload = (ev) => {
     form.value.image_url = ev.target.result
@@ -57,7 +64,8 @@ const handleFileUpload = (e) => {
 
 const openAdd = () => {
   form.value = { name: '', price: 0, stock: 0, category_id: '', is_available: true, image_url: '' }
-  modals.add = true // 3. Update cara buka modal
+  selectedImageFile.value = null // Reset file
+  modals.add = true
 }
 
 const openEdit = (menu) => {
@@ -70,7 +78,8 @@ const openEdit = (menu) => {
     is_available: menu.is_available,
     image_url: menu.image_url || '',
   }
-  modals.edit = true // 3. Update cara buka modal
+  selectedImageFile.value = null // Reset file
+  modals.edit = true
 }
 
 const openDelete = (menu) => {
@@ -78,14 +87,36 @@ const openDelete = (menu) => {
   showDeleteModal.value = true
 }
 
+// 3. Fungsi bantuan untuk membungkus payload menjadi Multipart Form Data
+const buildFormData = () => {
+  const formData = new FormData()
+  formData.append('name', form.value.name)
+  formData.append('price', form.value.price)
+  formData.append('stock', form.value.stock)
+  formData.append('category_id', form.value.category_id)
+  formData.append('is_available', form.value.is_available)
+
+  // Hanya masukkan kolom image jika ada file baru yang diunggah
+  if (selectedImageFile.value) {
+    formData.append('image', selectedImageFile.value)
+  }
+
+  return formData
+}
+
 const saveData = async () => {
   isSubmitting.value = true
   try {
-    await api.post('/menus', form.value)
-    modals.add = false // 3. Update cara tutup modal
+    // 4. Kirim FormData dan beri tahu Axios ini adalah multipart/form-data
+    const payload = buildFormData()
+    await api.post('/menus', payload, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    modals.add = false
     fetchData()
   } catch (e) {
     console.error(e)
+    alert(e.response?.data?.message || 'Terjadi kesalahan saat menyimpan menu')
   } finally {
     isSubmitting.value = false
   }
@@ -94,11 +125,16 @@ const saveData = async () => {
 const updateData = async () => {
   isSubmitting.value = true
   try {
-    await api.put(`/menus/${selectedMenu.value.id}`, form.value)
-    modals.edit = false // 3. Update cara tutup modal
+    // Lakukan hal yang sama untuk update
+    const payload = buildFormData()
+    await api.put(`/menus/${selectedMenu.value.id}`, payload, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    modals.edit = false
     fetchData()
   } catch (e) {
     console.error(e)
+    alert(e.response?.data?.message || 'Terjadi kesalahan saat mengubah menu')
   } finally {
     isSubmitting.value = false
   }

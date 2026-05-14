@@ -10,6 +10,7 @@ const cartStore = useCartStore()
 const emit = defineEmits(['transaction-success'])
 
 // State POS
+const categories = ref(['Semua']) // State baru untuk menyimpan daftar kategori dari API
 const menus = ref([])
 const isLoading = ref(true)
 const searchQuery = ref('')
@@ -32,21 +33,29 @@ const formatRupiah = (val) =>
     maximumFractionDigits: 0,
   }).format(val)
 
-const categories = computed(() => {
-  const cats = [...new Set(menus.value.map((m) => m.category_name || 'Lainnya'))]
-  return ['Semua', ...cats]
-})
-
 const filteredMenus = computed(() => {
   return menus.value.filter((m) => {
     const matchSearch = m.name.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchCat =
-      activeCategory.value === 'Semua' || (m.category_name || 'Lainnya') === activeCategory.value
+    // Menggunakan optional chaining untuk mencocokkan nama kategori
+    const matchCat = activeCategory.value === 'Semua' || m.category?.name === activeCategory.value
     return matchSearch && matchCat && m.is_available !== false
   })
 })
 
 const isMenuInCart = (menuId) => cartStore.items.some((item) => item.id === menuId)
+
+// Fungsi untuk mengambil semua kategori (termasuk yang kosong)
+const fetchCategories = async () => {
+  try {
+    const res = await api.get('/categories')
+    if (res.data.success) {
+      const catNames = res.data.data.map((c) => c.name)
+      categories.value = ['Semua', ...catNames]
+    }
+  } catch (e) {
+    console.error('Gagal memuat kategori:', e)
+  }
+}
 
 const fetchMenus = async () => {
   try {
@@ -94,14 +103,16 @@ const submitTransaction = async () => {
   }
 }
 
-onMounted(fetchMenus)
+// Memanggil fetchCategories dan fetchMenus saat komponen di-mount
+onMounted(() => {
+  fetchCategories()
+  fetchMenus()
+})
 </script>
 
 <template>
   <div class="flex flex-1 overflow-hidden min-h-0 relative">
-    <!-- ===== LEFT: Menu Grid ===== -->
     <section class="flex flex-col flex-1 overflow-hidden bg-amber-50 min-w-0">
-      <!-- Search + Filter -->
       <div class="px-4 sm:px-5 lg:px-6 pt-4 sm:pt-5 pb-3 bg-white border-b border-amber-100">
         <div class="relative mb-3">
           <i
@@ -116,7 +127,6 @@ onMounted(fetchMenus)
           />
         </div>
 
-        <!-- Category Pills -->
         <div class="flex gap-2 pb-1 overflow-x-auto scrollbar-hide">
           <button
             v-for="cat in categories"
@@ -134,9 +144,7 @@ onMounted(fetchMenus)
         </div>
       </div>
 
-      <!-- Menu Cards — extra bottom padding on mobile for FAB -->
       <div class="flex-1 p-4 sm:p-5 overflow-y-auto pb-28 sm:pb-5">
-        <!-- Loading skeleton -->
         <div
           v-if="isLoading"
           class="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
@@ -154,7 +162,6 @@ onMounted(fetchMenus)
           </div>
         </div>
 
-        <!-- Empty state -->
         <div
           v-else-if="filteredMenus.length === 0"
           class="flex flex-col items-center justify-center h-40 text-gray-400"
@@ -163,7 +170,6 @@ onMounted(fetchMenus)
           <p class="text-sm font-medium">Menu tidak ditemukan</p>
         </div>
 
-        <!-- Grid -->
         <div v-else class="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
           <div
             v-for="menu in filteredMenus"
@@ -176,12 +182,12 @@ onMounted(fetchMenus)
                 : 'cursor-pointer hover:shadow-md hover:-translate-y-0.5 active:scale-95'
             "
           >
-            <!-- Image -->
             <div class="relative overflow-hidden" style="height: 96px">
               <img
                 :src="
-                  menu.image_url ||
-                  `https://ui-avatars.com/api/?name=${menu.name}&background=fff3e0&color=e07b00&bold=true&size=300`
+                  menu.image_url
+                    ? `https://kantin-mardira-api-production.up.railway.app${menu.image_url}`
+                    : `https://ui-avatars.com/api/?name=${menu.name}&background=fff3e0&color=e07b00&bold=true&size=300`
                 "
                 class="object-cover w-full h-full transition-transform duration-300"
                 :class="!isMenuInCart(menu.id) ? 'group-hover:scale-105' : ''"
@@ -199,7 +205,6 @@ onMounted(fetchMenus)
               </div>
             </div>
 
-            <!-- Info -->
             <div class="p-2.5 sm:p-3">
               <p class="text-xs sm:text-sm font-semibold text-gray-800 truncate leading-tight">
                 {{ menu.name }}
@@ -214,9 +219,7 @@ onMounted(fetchMenus)
       </div>
     </section>
 
-    <!-- ===== RIGHT: Cart Sidebar (Desktop only lg+) ===== -->
     <aside class="hidden lg:flex flex-col w-80 bg-white border-l border-amber-100 flex-shrink-0">
-      <!-- Cart Header -->
       <div class="px-5 py-4 border-b border-amber-100">
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
@@ -235,7 +238,6 @@ onMounted(fetchMenus)
         </div>
       </div>
 
-      <!-- Cart Items -->
       <div class="flex-1 px-5 py-3 overflow-y-auto">
         <div
           v-if="cartStore.items.length === 0"
@@ -299,7 +301,6 @@ onMounted(fetchMenus)
         </div>
       </div>
 
-      <!-- Footer: Total + Checkout -->
       <div class="px-5 py-4 border-t border-amber-100">
         <div class="mb-4 space-y-2">
           <div class="flex justify-between text-sm text-gray-400">
@@ -322,7 +323,6 @@ onMounted(fetchMenus)
       </div>
     </aside>
 
-    <!-- ===== MOBILE: Floating Cart Button (< lg) ===== -->
     <div
       class="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-sm"
     >
@@ -343,9 +343,7 @@ onMounted(fetchMenus)
       </button>
     </div>
 
-    <!-- ===== MOBILE: Cart Bottom Sheet ===== -->
     <Teleport to="body">
-      <!-- Backdrop -->
       <Transition name="fade">
         <div
           v-if="isCartSheetOpen"
@@ -354,18 +352,15 @@ onMounted(fetchMenus)
         />
       </Transition>
 
-      <!-- Sheet -->
       <Transition name="slide-up">
         <div
           v-if="isCartSheetOpen"
           class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col"
         >
-          <!-- Sheet Handle -->
           <div class="flex justify-center pt-3 pb-1">
             <div class="w-10 h-1 bg-gray-200 rounded-full"></div>
           </div>
 
-          <!-- Sheet Header -->
           <div class="flex items-center justify-between px-5 py-3 border-b border-amber-100">
             <div class="flex items-center gap-2">
               <div class="w-7 h-7 rounded-xl bg-orange-100 flex items-center justify-center">
@@ -390,7 +385,6 @@ onMounted(fetchMenus)
             </div>
           </div>
 
-          <!-- Sheet Items -->
           <div class="flex-1 px-5 py-3 overflow-y-auto">
             <div
               v-if="cartStore.items.length === 0"
@@ -452,7 +446,6 @@ onMounted(fetchMenus)
             </div>
           </div>
 
-          <!-- Sheet Footer -->
           <div class="px-5 py-4 border-t border-amber-100 bg-white">
             <div class="flex justify-between font-bold text-gray-900 mb-3">
               <span>Total</span>
@@ -471,7 +464,6 @@ onMounted(fetchMenus)
       </Transition>
     </Teleport>
 
-    <!-- ===== Checkout Dialog ===== -->
     <Dialog
       v-model:visible="isCheckoutVisible"
       modal
@@ -486,7 +478,6 @@ onMounted(fetchMenus)
         root: { style: 'border-radius: 1.25rem; overflow: hidden' },
       }"
     >
-      <!-- Dialog Header -->
       <div
         class="flex items-center justify-between px-5 sm:px-6 pt-5 pb-4 border-b border-gray-100"
       >
@@ -505,7 +496,6 @@ onMounted(fetchMenus)
       </div>
 
       <div class="px-5 sm:px-6 py-5 space-y-4">
-        <!-- Total Banner -->
         <div
           class="flex items-center justify-between p-4 bg-amber-50 rounded-2xl ring-1 ring-amber-100"
         >
@@ -515,7 +505,6 @@ onMounted(fetchMenus)
           }}</span>
         </div>
 
-        <!-- Customer Name -->
         <div class="flex flex-col gap-1.5">
           <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">
             Nama Pemesan <span class="normal-case font-normal">(Opsional)</span>
@@ -534,7 +523,6 @@ onMounted(fetchMenus)
           </div>
         </div>
 
-        <!-- Payment Method -->
         <div class="flex flex-col gap-1.5">
           <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider"
             >Metode Pembayaran</label
@@ -560,7 +548,6 @@ onMounted(fetchMenus)
           </div>
         </div>
 
-        <!-- Cash Input -->
         <div v-if="selectedPayment === 'cash'" class="flex flex-col gap-1.5">
           <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider"
             >Uang Diterima</label
@@ -583,7 +570,6 @@ onMounted(fetchMenus)
           </div>
         </div>
 
-        <!-- QRIS info -->
         <div
           v-else
           class="flex items-center gap-2 p-3 text-sm text-blue-600 bg-blue-50 rounded-xl ring-1 ring-blue-100"
@@ -593,7 +579,6 @@ onMounted(fetchMenus)
         </div>
       </div>
 
-      <!-- Footer Buttons -->
       <div class="flex gap-2 px-5 sm:px-6 pb-5 pt-1">
         <button
           @click="isCheckoutVisible = false"
