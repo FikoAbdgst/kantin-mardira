@@ -186,7 +186,7 @@ onMounted(() => {
               <img
                 :src="
                   menu.image_url
-                    ? `https://kantin-mardira-api-production.up.railway.app${menu.image_url}`
+                    ? menu.image_url.replace('http://localhost:8080', '')
                     : `https://ui-avatars.com/api/?name=${menu.name}&background=fff3e0&color=e07b00&bold=true&size=300`
                 "
                 class="object-cover w-full h-full transition-transform duration-300"

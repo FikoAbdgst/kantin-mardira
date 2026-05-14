@@ -15,6 +15,10 @@ export default defineConfig({
       '/api': {
         target: 'https://kantin-mardira-api-production.up.railway.app',
         changeOrigin: true,
+      },
+      '/uploads': {
+        target: 'https://kantin-mardira-api-production.up.railway.app',
+        changeOrigin: true,
       }
     }
   }

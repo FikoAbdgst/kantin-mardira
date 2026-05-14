@@ -45,8 +45,12 @@ const showReportModal = ref(false)
 const isGeneratingPdf = ref(false)
 const pdfPreviewUrl = ref(null)
 const pdfFilename = ref('')
+
+// State untuk filter laporan
 const reportType = ref('monthly')
 const reportDate = ref('')
+const reportStartDate = ref('') // Tambahan untuk Mingguan
+const reportEndDate = ref('') // Tambahan untuk Mingguan
 const reportMonth = ref(new Date().getMonth() + 1)
 const reportYear = ref(currentYear)
 
@@ -116,14 +120,23 @@ const generatePdfPreview = async () => {
   try {
     let endpoint = '',
       filename = ''
+
+    // Logika pengkondisian untuk 3 tipe laporan
     if (reportType.value === 'daily') {
       if (!reportDate.value) return alert('Pilih tanggal terlebih dahulu!')
       endpoint = `/reports/daily/pdf?date=${reportDate.value}`
       filename = `Laporan_Harian_Kantin_${reportDate.value}.pdf`
+    } else if (reportType.value === 'weekly') {
+      if (!reportStartDate.value || !reportEndDate.value) {
+        return alert('Pilih tanggal mulai dan tanggal akhir terlebih dahulu!')
+      }
+      endpoint = `/reports/weekly/pdf?start_date=${reportStartDate.value}&end_date=${reportEndDate.value}`
+      filename = `Laporan_Mingguan_Kantin_${reportStartDate.value}_sd_${reportEndDate.value}.pdf`
     } else {
       endpoint = `/reports/monthly/pdf?month=${reportMonth.value}&year=${reportYear.value}`
       filename = `Laporan_Bulanan_Kantin_${reportYear.value}_${reportMonth.value}.pdf`
     }
+
     const res = await api.get(endpoint, { responseType: 'blob' })
     const blob = new Blob([res.data], { type: 'application/pdf' })
     pdfPreviewUrl.value = window.URL.createObjectURL(blob)
@@ -199,11 +212,9 @@ onMounted(fetchData)
     class="min-h-screen bg-[#faf8f5]"
     style="font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif"
   >
-    <!-- ===== Topbar ===== -->
     <header
       class="flex items-center justify-between px-4 sm:px-5 lg:px-8 py-3 sm:py-4 bg-white border-b border-amber-100 sticky top-0 z-20 shadow-sm"
     >
-      <!-- Logo -->
       <div class="flex items-center gap-2.5">
         <div
           class="w-8 h-8 sm:w-9 sm:h-9 rounded-2xl flex items-center justify-center shadow-sm flex-shrink-0"
@@ -217,20 +228,16 @@ onMounted(fetchData)
           </h1>
           <p class="text-xs font-semibold mt-0.5" style="color: #f97316">Dashboard Manager</p>
         </div>
-        <!-- Mobile: just title -->
         <span class="sm:hidden text-sm font-extrabold text-gray-900">Dashboard</span>
       </div>
 
-      <!-- Right actions -->
       <div class="flex items-center gap-2 sm:gap-3">
-        <!-- PDF button shortcut on header (mobile) -->
         <button
           @click="openReportModal"
           class="sm:hidden flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-white shadow-sm transition-all active:scale-95"
           style="background: linear-gradient(135deg, #f97316, #ea580c)"
         >
-          <i class="pi pi-file-pdf" style="font-size: 11px"></i>
-          PDF
+          <i class="pi pi-file-pdf" style="font-size: 11px"></i> PDF
         </button>
 
         <div class="hidden sm:block text-right">
@@ -257,17 +264,13 @@ onMounted(fetchData)
       </div>
     </header>
 
-    <!-- ===== Main Content ===== -->
     <main
       class="max-w-6xl mx-auto px-4 sm:px-5 lg:px-8 py-5 sm:py-7 lg:py-8 space-y-5 sm:space-y-7 lg:space-y-8"
     >
-      <!-- ===== Hero + PDF CTA ===== -->
       <section class="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
-        <!-- Welcome card -->
         <div
           class="sm:col-span-2 bg-white rounded-3xl border border-amber-100 shadow-sm p-5 sm:p-7 flex flex-col justify-between gap-4 relative overflow-hidden"
         >
-          <!-- Background decoration -->
           <div
             class="absolute -right-10 -top-10 w-44 h-44 rounded-full opacity-[0.06] pointer-events-none"
             style="background: radial-gradient(circle, #f97316, transparent)"
@@ -293,7 +296,6 @@ onMounted(fetchData)
             </p>
           </div>
 
-          <!-- Quick stats pills -->
           <div class="flex items-center gap-3 relative z-10 flex-wrap">
             <div
               class="flex items-center gap-2 px-3.5 py-2.5 rounded-2xl border border-orange-100"
@@ -329,7 +331,6 @@ onMounted(fetchData)
           </div>
         </div>
 
-        <!-- PDF CTA Card -->
         <button
           @click="openReportModal"
           class="hidden sm:flex bg-white border border-amber-100 rounded-3xl p-6 flex-col items-center justify-center gap-4 hover:shadow-lg hover:-translate-y-1 transition-all group shadow-sm"
@@ -342,18 +343,16 @@ onMounted(fetchData)
           </div>
           <div class="text-center">
             <p class="font-extrabold text-gray-800 text-sm">Laporan PDF</p>
-            <p class="text-xs text-gray-400 mt-0.5">Harian & bulanan</p>
+            <p class="text-xs text-gray-400 mt-0.5">Harian, Mingguan & Bulanan</p>
           </div>
           <span
             class="text-xs font-bold px-4 py-1.5 rounded-full transition-colors"
             style="background: #fff7ed; color: #ea580c"
+            >Buat laporan →</span
           >
-            Buat laporan →
-          </span>
         </button>
       </section>
 
-      <!-- ===== Stat Cards ===== -->
       <section>
         <div class="flex items-center justify-between mb-3 sm:mb-4">
           <h3 class="text-sm sm:text-base font-extrabold text-gray-900">Performa Bulan Ini</h3>
@@ -373,7 +372,6 @@ onMounted(fetchData)
               >
                 <i :class="`pi ${card.icon} ${card.accent}`" style="font-size: 14px"></i>
               </div>
-              <!-- Decorative dot -->
               <div
                 class="w-2 h-2 rounded-full mt-1"
                 :style="{ background: card.bar, opacity: 0.3 }"
@@ -393,10 +391,8 @@ onMounted(fetchData)
         </div>
       </section>
 
-      <!-- ===== Top Menu Table ===== -->
       <section>
         <div class="bg-white rounded-3xl border border-amber-100 shadow-sm overflow-hidden">
-          <!-- Section header -->
           <div
             class="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-amber-100"
           >
@@ -407,9 +403,8 @@ onMounted(fetchData)
             <span
               class="text-xs font-bold px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full ring-1 ring-orange-100"
               style="background: #fff7ed; color: #ea580c"
+              >Top 5 Terlaris</span
             >
-              Top 5 Terlaris
-            </span>
           </div>
 
           <div
@@ -420,7 +415,6 @@ onMounted(fetchData)
             <p class="text-sm font-medium">Belum ada data penjualan</p>
           </div>
 
-          <!-- Mobile card list (< md) -->
           <div v-else-if="!isLoading" class="md:hidden divide-y divide-amber-50">
             <div
               v-for="(item, index) in topMenus.slice(0, 5)"
@@ -430,14 +424,13 @@ onMounted(fetchData)
               <span
                 class="w-8 h-8 flex items-center justify-center text-xs font-extrabold rounded-full flex-shrink-0"
                 :class="rankStyle(index)"
+                >{{ index + 1 }}</span
               >
-                {{ index + 1 }}
-              </span>
               <div class="flex-1 min-w-0">
                 <p class="text-sm font-bold text-gray-800 truncate">{{ item.menu_name }}</p>
                 <p class="text-xs text-gray-400 mt-0.5">
-                  <i class="pi pi-shopping-bag mr-1" style="font-size: 10px"></i>
-                  {{ item.total_quantity_sold }} pcs terjual
+                  <i class="pi pi-shopping-bag mr-1" style="font-size: 10px"></i
+                  >{{ item.total_quantity_sold }} pcs terjual
                 </p>
               </div>
               <span class="text-sm font-extrabold flex-shrink-0" style="color: #f97316">{{
@@ -446,7 +439,6 @@ onMounted(fetchData)
             </div>
           </div>
 
-          <!-- Mobile loading -->
           <div v-else class="md:hidden divide-y divide-amber-50">
             <div v-for="i in 5" :key="i" class="flex items-center gap-3 px-4 py-3.5 animate-pulse">
               <div class="w-8 h-8 rounded-full bg-gray-100 flex-shrink-0"></div>
@@ -458,7 +450,6 @@ onMounted(fetchData)
             </div>
           </div>
 
-          <!-- Desktop DataTable (>= md) -->
           <div class="hidden md:block">
             <DataTable :value="topMenus" :loading="isLoading" :rows="5" :rowHover="true">
               <Column header="#" style="width: 72px" align="center">
@@ -466,15 +457,14 @@ onMounted(fetchData)
                   <span
                     class="inline-flex items-center justify-center w-8 h-8 text-xs font-extrabold rounded-full"
                     :class="rankStyle(index)"
+                    >{{ index + 1 }}</span
                   >
-                    {{ index + 1 }}
-                  </span>
                 </template>
               </Column>
               <Column field="menu_name" header="Nama Menu">
-                <template #body="{ data }">
-                  <span class="font-bold text-gray-800">{{ data.menu_name }}</span>
-                </template>
+                <template #body="{ data }"
+                  ><span class="font-bold text-gray-800">{{ data.menu_name }}</span></template
+                >
               </Column>
               <Column field="total_quantity_sold" header="Terjual">
                 <template #body="{ data }">
@@ -499,7 +489,6 @@ onMounted(fetchData)
       </section>
     </main>
 
-    <!-- ===== Report Modal ===== -->
     <Dialog
       v-model:visible="showReportModal"
       @hide="closeReportModal"
@@ -515,7 +504,6 @@ onMounted(fetchData)
         root: { style: 'border-radius: 1.5rem; overflow: hidden' },
       }"
     >
-      <!-- Modal Header -->
       <div
         class="flex items-center justify-between px-5 sm:px-6 pt-5 pb-4 border-b border-gray-100"
       >
@@ -537,20 +525,19 @@ onMounted(fetchData)
       </div>
 
       <div class="px-5 sm:px-6 py-5 space-y-5">
-        <!-- Controls -->
         <div
           class="rounded-2xl border border-gray-100 p-4 sm:p-5 space-y-4"
           style="background: #fafafa"
         >
-          <!-- Report type toggle -->
           <div class="flex flex-col gap-2">
             <label class="text-xs font-bold text-gray-400 uppercase tracking-wider"
               >Tipe Laporan</label
             >
-            <div class="grid grid-cols-2 gap-2">
+            <div class="grid grid-cols-3 gap-2">
               <button
                 v-for="type in [
                   { val: 'daily', icon: 'pi-calendar', label: 'Harian' },
+                  { val: 'weekly', icon: 'pi-calendar-minus', label: 'Mingguan' },
                   { val: 'monthly', icon: 'pi-calendar-plus', label: 'Bulanan' },
                 ]"
                 :key="type.val"
@@ -560,7 +547,7 @@ onMounted(fetchData)
                     pdfPreviewUrl = null
                   }
                 "
-                class="flex items-center gap-2 px-4 py-3 rounded-xl border text-sm font-bold transition-all"
+                class="flex items-center justify-center gap-2 px-3 sm:px-4 py-3 rounded-xl border text-xs sm:text-sm font-bold transition-all"
                 :class="
                   reportType === type.val
                     ? 'border-orange-300 text-orange-700 ring-2 ring-orange-100'
@@ -572,12 +559,11 @@ onMounted(fetchData)
                   :class="`pi ${type.icon} text-sm`"
                   :style="reportType === type.val ? 'color: #f97316' : 'color: #9ca3af'"
                 ></i>
-                Laporan {{ type.label }}
+                {{ type.label }}
               </button>
             </div>
           </div>
 
-          <!-- Daily date picker -->
           <div v-if="reportType === 'daily'" class="flex flex-col gap-1.5">
             <label class="text-xs font-bold text-gray-400 uppercase tracking-wider"
               >Tanggal Transaksi</label
@@ -595,7 +581,41 @@ onMounted(fetchData)
             </div>
           </div>
 
-          <!-- Monthly pickers -->
+          <div v-if="reportType === 'weekly'" class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-bold text-gray-400 uppercase tracking-wider"
+                >Mulai Tanggal</label
+              >
+              <div class="relative">
+                <i
+                  class="pi pi-calendar absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
+                  style="font-size: 13px"
+                ></i>
+                <input
+                  v-model="reportStartDate"
+                  type="date"
+                  class="w-full pl-9 pr-4 py-3 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 transition-all text-gray-800"
+                />
+              </div>
+            </div>
+            <div class="flex flex-col gap-1.5">
+              <label class="text-xs font-bold text-gray-400 uppercase tracking-wider"
+                >Sampai Tanggal</label
+              >
+              <div class="relative">
+                <i
+                  class="pi pi-calendar absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
+                  style="font-size: 13px"
+                ></i>
+                <input
+                  v-model="reportEndDate"
+                  type="date"
+                  class="w-full pl-9 pr-4 py-3 text-sm bg-white border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 transition-all text-gray-800"
+                />
+              </div>
+            </div>
+          </div>
+
           <div v-if="reportType === 'monthly'" class="grid grid-cols-2 gap-3">
             <div class="flex flex-col gap-1.5">
               <label class="text-xs font-bold text-gray-400 uppercase tracking-wider">Bulan</label>
@@ -639,7 +659,6 @@ onMounted(fetchData)
             </div>
           </div>
 
-          <!-- Generate button -->
           <button
             @click="generatePdfPreview"
             :disabled="isGeneratingPdf"
@@ -652,7 +671,6 @@ onMounted(fetchData)
           </button>
         </div>
 
-        <!-- PDF Preview -->
         <div v-if="pdfPreviewUrl" class="pdf-fadein">
           <div class="flex items-center justify-between mb-3">
             <div class="flex items-center gap-2">
@@ -676,7 +694,6 @@ onMounted(fetchData)
         </div>
       </div>
 
-      <!-- Modal footer -->
       <div class="flex items-center justify-end gap-2 px-5 sm:px-6 pb-5 pt-1">
         <button
           @click="closeReportModal"

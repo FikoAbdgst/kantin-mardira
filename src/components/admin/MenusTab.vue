@@ -194,7 +194,7 @@ onMounted(fetchData)
               >
                 <img
                   v-if="data.image_url"
-                  :src="data.image_url"
+                  :src="data.image_url.replace('http://localhost:8080', '')"
                   class="w-full h-full object-cover"
                 />
                 <div v-else class="w-full h-full flex items-center justify-center">
@@ -403,7 +403,7 @@ onMounted(fetchData)
             </label>
             <div v-if="form.image_url" class="flex items-center gap-3 mt-1">
               <img
-                :src="form.image_url"
+                :src="form.image_url.replace('http://localhost:8080', '')"
                 class="w-14 h-14 object-cover rounded-xl border border-amber-100"
               />
               <div>
