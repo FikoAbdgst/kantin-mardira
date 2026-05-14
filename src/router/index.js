@@ -30,7 +30,12 @@ const router = createRouter({
       name: 'admin',
       component: AdminView,
       meta: { requiresAuth: true, allowedRoles: ['admin'] },
-    }
+    },
+
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/login',
+    },
   ],
 })
 
