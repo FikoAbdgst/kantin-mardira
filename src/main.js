@@ -18,12 +18,12 @@ app.config.globalProperties.$notify = notify
 app.provide('notify', notify)
 
 app.use(PrimeVue, {
-    theme: {
-        preset: Aura,
-        options: {
-            darkModeSelector: '.app-dark-mode-manual',
-        },
+  theme: {
+    preset: Aura,
+    options: {
+      darkModeSelector: '.app-dark-mode-manual',
     },
+  },
 })
 
 app.mount('#app')

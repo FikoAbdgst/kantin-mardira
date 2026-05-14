@@ -93,7 +93,10 @@ const submitTransaction = async () => {
     }
     const res = await api.post('/transactions', payload)
     if (res.data.success) {
-      showSuccess('Transaksi berhasil', `Kembalian: ${formatRupiah(res.data.data.change_amount || 0)}`)
+      showSuccess(
+        'Transaksi berhasil',
+        `Kembalian: ${formatRupiah(res.data.data.change_amount || 0)}`,
+      )
       cartStore.clearCart()
       isCheckoutVisible.value = false
       emit('transaction-success')

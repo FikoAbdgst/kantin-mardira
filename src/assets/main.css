@@ -1,52 +1,54 @@
-@import "tailwindcss";
+@import 'tailwindcss';
 
 .swal2-container {
-	z-index: 9999;
+  z-index: 9999;
 }
 
 .swal2-popup.pos-swal-popup,
 .swal2-toast {
-	border-radius: 1.25rem;
-	font-family: inherit;
+  border-radius: 1.25rem;
+  font-family: inherit;
 }
 
 .swal2-toast {
-	padding: 0.85rem 1rem;
-	box-shadow: 0 18px 45px rgba(249, 115, 22, 0.18);
+  padding: 0.85rem 1rem;
+  box-shadow: 0 18px 45px rgba(249, 115, 22, 0.18);
 }
 
 .swal2-title {
-	color: #1f2937;
-	font-size: 1rem;
-	font-weight: 700;
+  color: #1f2937;
+  font-size: 1rem;
+  font-weight: 700;
 }
 
 .swal2-html-container {
-	color: #6b7280;
-	font-size: 0.92rem;
+  color: #6b7280;
+  font-size: 0.92rem;
 }
 
 .pos-swal-confirm,
 .pos-swal-cancel {
-	min-width: 96px;
-	padding: 0.72rem 1rem;
-	border-radius: 0.95rem;
-	font-weight: 700;
-	transition: transform 0.15s ease, box-shadow 0.15s ease;
+  min-width: 96px;
+  padding: 0.72rem 1rem;
+  border-radius: 0.95rem;
+  font-weight: 700;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
 }
 
 .pos-swal-confirm {
-	background: #f97316;
-	color: #fff;
-	box-shadow: 0 10px 18px rgba(249, 115, 22, 0.24);
+  background: #f97316;
+  color: #fff;
+  box-shadow: 0 10px 18px rgba(249, 115, 22, 0.24);
 }
 
 .pos-swal-cancel {
-	background: #f3f4f6;
-	color: #4b5563;
+  background: #f3f4f6;
+  color: #4b5563;
 }
 
 .pos-swal-confirm:hover,
 .pos-swal-cancel:hover {
-	transform: translateY(-1px);
+  transform: translateY(-1px);
 }
