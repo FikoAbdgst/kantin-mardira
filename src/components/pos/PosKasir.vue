@@ -46,6 +46,8 @@ const filteredMenus = computed(() => {
 
 const isMenuInCart = (menuId) => cartStore.items.some((item) => item.id === menuId)
 
+const cartQty = (menuId) => cartStore.items.find((item) => item.id === menuId)?.qty || 0
+
 // Fungsi untuk mengambil semua kategori (termasuk yang kosong)
 const fetchCategories = async () => {
   try {
@@ -115,36 +117,38 @@ onMounted(() => {
 })
 </script>
 
+<!-- Meja kasir: label harga fisik + nota berjalan. Kartu = slip nota bergerigi. -->
 <template>
   <div class="flex flex-1 overflow-hidden min-h-0 relative">
-    <section class="flex flex-col flex-1 overflow-hidden bg-amber-50 min-w-0">
-      <div class="px-4 sm:px-5 lg:px-6 pt-4 sm:pt-5 pb-3 bg-white border-b border-amber-100">
-        <div class="relative mb-3">
-          <i
-            class="pi pi-search absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
-            style="font-size: 13px"
-          ></i>
+    <section class="flex flex-col flex-1 overflow-hidden min-w-0">
+      <div class="kertas px-4 sm:px-5 lg:px-6 pt-4 pb-2 border-b-2" style="border-color: var(--tinta)">
+        <div class="relative mb-2">
           <input
             v-model="searchQuery"
             type="text"
-            placeholder="Cari nama menu..."
-            class="w-full pl-9 pr-4 py-2.5 rounded-xl border border-gray-200 bg-gray-50 text-sm text-gray-800 placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 focus:bg-white transition-all"
+            placeholder="Cari di papan menu… mis. geprek"
+            aria-label="Cari menu"
+            class="w-full px-4 py-2.5 rounded-md border-2 bg-white/70 text-sm placeholder:text-stone-400 focus:outline-none transition-colors"
+            style="border-color: var(--garis); color: var(--tinta)"
+            onfocus="this.style.borderColor='var(--bata)'"
+            onblur="this.style.borderColor='var(--garis)'"
           />
         </div>
 
-        <div class="flex gap-2 pb-1 overflow-x-auto scrollbar-hide">
+        <!-- Filter ledger: indeks + nama + garis bawah tinta. Bukan pil. -->
+        <div class="flex gap-4 sm:gap-5 pb-1 overflow-x-auto" role="tablist" aria-label="Kategori menu" style="scrollbar-width: none">
           <button
-            v-for="cat in categories"
+            v-for="(cat, i) in categories"
             :key="cat"
             @click="activeCategory = cat"
-            class="shrink-0 px-3 sm:px-4 py-1.5 rounded-full text-xs font-semibold transition-all"
-            :class="
-              activeCategory === cat
-                ? 'bg-orange-400 text-white shadow-sm'
-                : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
-            "
+            role="tab"
+            :aria-selected="activeCategory === cat"
+            class="shrink-0 pb-1.5 pt-1 text-xs font-bold uppercase tracking-[0.14em] border-b-[3px] transition-colors whitespace-nowrap"
+            :style="activeCategory === cat
+              ? 'color: var(--bata-deep); border-color: var(--bata)'
+              : 'color: var(--tinta-soft); border-color: transparent'"
           >
-            {{ cat }}
+            <span class="angka-nota mr-1.5 font-bold" :style="activeCategory === cat ? 'color: var(--bata)' : 'color: #b3a687'">{{ String(i).padStart(2, '0') }}</span>{{ cat }}
           </button>
         </div>
       </div>
@@ -152,92 +156,102 @@ onMounted(() => {
       <div class="flex-1 p-4 sm:p-5 overflow-y-auto pb-28 sm:pb-5">
         <div
           v-if="isLoading"
-          class="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4"
+          class="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4"
         >
           <div
             v-for="i in 8"
             :key="i"
-            class="bg-white border border-amber-100 rounded-3xl overflow-hidden animate-pulse"
+            class="kertas border rounded-b-xl rounded-t-sm overflow-hidden animate-pulse"
+            style="border-color: var(--garis)"
           >
-            <div class="h-24 sm:h-28 bg-gray-100"></div>
+            <div class="h-24 sm:h-28" style="background: var(--krem-deep)"></div>
             <div class="p-3 space-y-2">
-              <div class="h-3 bg-gray-100 rounded w-3/4"></div>
-              <div class="h-3 bg-gray-100 rounded w-1/2"></div>
+              <div class="h-3 rounded w-3/4" style="background: var(--krem-deep)"></div>
+              <div class="h-3 rounded w-1/2" style="background: var(--krem-deep)"></div>
             </div>
           </div>
         </div>
 
         <div
           v-else-if="filteredMenus.length === 0"
-          class="flex flex-col items-center justify-center h-40 text-gray-400"
+          class="flex flex-col items-center justify-center h-40"
+          style="color: var(--tinta-soft)"
         >
-          <i class="pi pi-inbox text-4xl mb-2 text-amber-200"></i>
-          <p class="text-sm font-medium">Menu tidak ditemukan</p>
+          <p class="angka-nota text-xs uppercase tracking-[0.2em]">Papan kosong</p>
+          <p class="text-sm font-medium mt-1">Menu tidak ditemukan — coba kata lain.</p>
         </div>
 
-        <div v-else class="grid grid-cols-2 gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-          <div
-            v-for="menu in filteredMenus"
+        <div v-else class="grid grid-cols-2 gap-3 sm:gap-4 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4">
+          <article
+            v-for="(menu, idx) in filteredMenus"
             :key="menu.id"
             @click="!isMenuInCart(menu.id) && cartStore.addToCart(menu)"
-            class="relative overflow-hidden bg-white border border-amber-100 rounded-3xl shadow-sm group transition-all duration-200"
-            :class="
+            @keydown.enter="!isMenuInCart(menu.id) && cartStore.addToCart(menu)"
+            tabindex="0"
+            :aria-disabled="isMenuInCart(menu.id)"
+            class="nota-slip relative flex flex-col transition-all duration-200 border-2"
+            :class="[
+              idx % 3 === 0 ? 'rounded-t-[3px] rounded-b-[14px]' : idx % 3 === 1 ? 'rounded-t-[3px] rounded-b-[8px]' : 'rounded-t-[3px] rounded-b-[18px_10px]',
               isMenuInCart(menu.id)
-                ? 'opacity-60 cursor-not-allowed'
-                : 'cursor-pointer hover:shadow-md hover:-translate-y-0.5 active:scale-95'
-            "
+                ? 'cursor-default'
+                : 'cursor-pointer hover:-translate-y-0.5 active:scale-[0.98]',
+            ]"
+            :style="isMenuInCart(menu.id) ? 'border-color: var(--tinta)' : 'border-color: rgba(42,33,24,.45); box-shadow: 0 2px 0 rgba(42,33,24,.45)'"
           >
-            <div class="relative overflow-hidden" style="height: 96px">
+            <div class="relative overflow-hidden mx-2.5 mt-2.5 rounded-[3px] border" style="height: 96px; border-color: rgba(42,33,24,.4)">
               <img
                 :src="getImageUrl(menu?.image_url)"
                 @error="handleImageError"
                 loading="lazy"
                 decoding="async"
-                class="object-cover w-full h-full transition-transform duration-300"
-                :class="!isMenuInCart(menu.id) ? 'group-hover:scale-105' : ''"
+                class="object-cover w-full h-full"
                 :alt="menu.name"
               />
-              <div
+              <span
                 v-if="isMenuInCart(menu.id)"
-                class="absolute inset-0 flex items-center justify-center bg-white/50 backdrop-blur-[1px]"
+                class="angka-nota absolute top-1.5 right-1.5 px-2 py-0.5 text-[11px] font-extrabold rounded border-2"
+                style="background: var(--tinta); border-color: var(--tinta); color: var(--kertas)"
               >
-                <div
-                  class="w-10 h-10 rounded-2xl bg-orange-400 flex items-center justify-center shadow-md"
-                >
-                  <i class="pi pi-check text-white font-bold"></i>
-                </div>
-              </div>
+                ×{{ cartQty(menu.id) }}
+              </span>
             </div>
 
-            <div class="p-2.5 sm:p-3">
-              <p class="text-xs sm:text-sm font-semibold text-gray-800 truncate leading-tight">
+            <div class="sobek sobek-kuning my-0" aria-hidden="true"></div>
+
+            <div class="px-2.5 pb-2.5 pt-1">
+              <h3 class="text-[13px] sm:text-sm font-bold truncate leading-tight" style="color: var(--tinta)">
                 {{ menu.name }}
-              </p>
-              <p class="mt-0.5 text-xs sm:text-sm font-bold text-orange-500">
-                {{ formatRupiah(menu.price) }}
-              </p>
-              <p class="mt-0.5 text-xs text-gray-400">Stok: {{ menu.stock }}</p>
+              </h3>
+              <div class="mt-1 flex items-baseline justify-between gap-2">
+                <p class="angka-nota text-[13px] sm:text-sm font-extrabold" style="color: var(--tinta)">
+                  {{ formatRupiah(menu.price) }}
+                </p>
+                <p
+                  v-if="menu.stock <= 5"
+                  class="angka-nota text-[10px] font-extrabold uppercase tracking-wider whitespace-nowrap"
+                  style="color: var(--bata-deep)"
+                >
+                  {{ menu.stock <= 0 ? 'Habis' : `Sisa ${menu.stock}` }}
+                </p>
+              </div>
             </div>
-          </div>
+          </article>
         </div>
       </div>
     </section>
 
-    <aside class="hidden lg:flex flex-col w-80 bg-white border-l border-amber-100 flex-shrink-0">
-      <div class="px-5 py-4 border-b border-amber-100">
+    <!-- ===== NOTA BERJALAN (desktop) ===== -->
+    <aside class="kertas hidden lg:flex flex-col w-80 border-l-2 flex-shrink-0" style="border-color: var(--tinta)">
+      <div class="px-5 py-4 border-b border-dashed" style="border-color: var(--garis)">
         <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2">
-            <div class="w-7 h-7 rounded-xl bg-orange-100 flex items-center justify-center">
-              <i class="pi pi-shopping-cart text-orange-500" style="font-size: 12px"></i>
-            </div>
-            <h2 class="font-bold text-gray-800">Pesanan</h2>
-          </div>
+          <h2 class="angka-nota text-xs font-extrabold uppercase tracking-[0.22em]" style="color: var(--tinta)">Nota berjalan</h2>
           <span
             v-if="cartStore.items.length > 0"
-            class="text-xs text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+            class="angka-nota text-[11px] font-bold uppercase tracking-wider underline underline-offset-2 cursor-pointer"
+            style="color: var(--bata-deep)"
             @click="cartStore.clearCart()"
           >
-            Hapus semua
+            Sobek semua
           </span>
         </div>
       </div>
@@ -245,24 +259,26 @@ onMounted(() => {
       <div class="flex-1 px-5 py-3 overflow-y-auto">
         <div
           v-if="cartStore.items.length === 0"
-          class="flex flex-col items-center justify-center h-full gap-2 text-gray-300"
+          class="flex flex-col items-center justify-center h-full gap-1 py-10 text-center"
         >
-          <div class="w-16 h-16 rounded-3xl bg-amber-50 flex items-center justify-center mb-1">
-            <i class="pi pi-shopping-cart text-amber-200 text-2xl"></i>
-          </div>
-          <p class="text-sm font-medium text-gray-400">Keranjang kosong</p>
-          <p class="text-xs text-gray-300">Pilih menu dari daftar</p>
+          <p class="angka-nota text-[11px] uppercase tracking-[0.22em]" style="color: var(--tinta-soft)">Kertas kosong</p>
+          <p class="text-sm font-medium" style="color: var(--tinta-soft)">Ketuk label menu untuk mencatat.</p>
         </div>
 
-        <div v-else class="space-y-2.5">
+        <div v-else>
           <div
             v-for="item in cartStore.items"
             :key="item.id"
-            class="flex items-center gap-3 p-2.5 rounded-2xl bg-amber-50 border border-amber-100"
+            class="flex items-center gap-2.5 py-2.5 border-b border-dashed last:border-0"
+            style="border-color: var(--garis)"
           >
             <button
               @click="cartStore.deleteItem(item.id)"
-              class="w-7 h-7 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-xl transition-colors flex-shrink-0"
+              aria-label="Hapus item"
+              class="w-7 h-7 flex items-center justify-center rounded transition-colors flex-shrink-0 hover:text-white"
+              style="color: var(--bata-deep)"
+              onmouseover="this.style.background='var(--bata)'"
+              onmouseout="this.style.background='transparent'"
             >
               <i class="pi pi-trash text-xs"></i>
             </button>
@@ -271,32 +287,32 @@ onMounted(() => {
               @error="handleImageError"
               loading="lazy"
               decoding="async"
-              class="w-9 h-9 object-cover rounded-xl border border-amber-100 flex-shrink-0"
+              class="w-9 h-9 object-cover rounded-[3px] border flex-shrink-0"
+              style="border-color: var(--garis)"
               :alt="item.name"
             />
             <div class="flex-1 min-w-0">
-              <p class="text-sm font-semibold text-gray-800 truncate">{{ item.name }}</p>
-              <p class="text-xs font-bold text-orange-500">
+              <p class="text-sm font-bold truncate" style="color: var(--tinta)">{{ item.name }}</p>
+              <p class="angka-nota text-xs font-bold" style="color: var(--tinta-soft)">
                 {{ formatRupiah(item.price * item.qty) }}
               </p>
             </div>
-            <div class="flex items-center gap-1.5 flex-shrink-0">
+            <div class="flex items-center gap-1 flex-shrink-0">
               <button
                 @click="cartStore.removeFromCart(item.id)"
                 :disabled="item.qty === 1"
-                class="w-6 h-6 rounded-lg text-xs flex items-center justify-center transition-colors"
-                :class="
-                  item.qty === 1
-                    ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                    : 'bg-white border border-gray-200 text-gray-600 hover:bg-gray-50'
-                "
+                aria-label="Kurangi"
+                class="w-6 h-6 rounded text-xs flex items-center justify-center border transition-colors disabled:opacity-30"
+                style="border-color: var(--tinta); color: var(--tinta)"
               >
                 <i class="pi pi-minus" style="font-size: 9px"></i>
               </button>
-              <span class="w-5 text-sm font-bold text-center text-gray-800">{{ item.qty }}</span>
+              <span class="angka-nota w-5 text-sm font-extrabold text-center" style="color: var(--tinta)">{{ item.qty }}</span>
               <button
                 @click="cartStore.addToCart(item)"
-                class="w-6 h-6 rounded-lg text-xs flex items-center justify-center bg-orange-400 hover:bg-orange-500 text-white transition-colors"
+                aria-label="Tambah"
+                class="w-6 h-6 rounded text-xs flex items-center justify-center transition-colors"
+                style="background: var(--tinta); color: var(--kertas)"
               >
                 <i class="pi pi-plus" style="font-size: 9px"></i>
               </button>
@@ -305,45 +321,43 @@ onMounted(() => {
         </div>
       </div>
 
-      <div class="px-5 py-4 border-t border-amber-100">
-        <div class="mb-4 space-y-2">
-          <div class="flex justify-between text-sm text-gray-400">
+      <div class="px-5 py-4 border-t-2" style="border-color: var(--tinta)">
+        <div class="mb-3 space-y-1">
+          <div class="flex justify-between text-sm" style="color: var(--tinta-soft)">
             <span>Subtotal</span>
-            <span>{{ formatRupiah(cartStore.totalPrice) }}</span>
+            <span class="angka-nota">{{ formatRupiah(cartStore.totalPrice) }}</span>
           </div>
-          <div class="flex justify-between font-bold text-gray-900">
+          <div class="flex justify-between font-extrabold" style="color: var(--tinta)">
             <span>Total</span>
-            <span class="text-lg text-orange-500">{{ formatRupiah(cartStore.totalPrice) }}</span>
+            <span class="angka-nota text-xl">{{ formatRupiah(cartStore.totalPrice) }}</span>
           </div>
         </div>
         <button
           @click="openCheckout"
           :disabled="cartStore.items.length === 0"
-          class="w-full py-3.5 rounded-2xl font-bold text-white text-sm bg-orange-400 hover:bg-orange-500 transition-all shadow-sm disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+          class="btn-bata w-full py-3.5 rounded-md font-extrabold text-sm uppercase tracking-[0.14em] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
         >
-          <i class="pi pi-credit-card mr-2" style="font-size: 13px"></i>
           Proses Pembayaran
         </button>
       </div>
     </aside>
 
+    <!-- Tombol nota mengambang (mobile) -->
     <div
       class="lg:hidden fixed bottom-4 left-1/2 -translate-x-1/2 z-30 w-[calc(100%-2rem)] max-w-sm"
     >
       <button
         v-if="cartStore.items.length > 0"
         @click="isCartSheetOpen = true"
-        class="w-full flex items-center justify-between px-4 py-3.5 bg-orange-400 hover:bg-orange-500 rounded-2xl shadow-lg text-white transition-all active:scale-95"
+        class="btn-bata w-full flex items-center justify-between px-4 py-3.5 rounded-md transition-all active:scale-95"
       >
         <div class="flex items-center gap-2">
-          <span
-            class="w-6 h-6 rounded-lg bg-white/20 flex items-center justify-center text-xs font-bold"
-          >
+          <span class="angka-nota w-6 h-6 rounded bg-white/20 flex items-center justify-center text-xs font-extrabold">
             {{ cartStore.items.reduce((s, i) => s + i.qty, 0) }}
           </span>
-          <span class="text-sm font-semibold">Lihat Pesanan</span>
+          <span class="text-sm font-bold">Lihat nota</span>
         </div>
-        <span class="text-sm font-bold">{{ formatRupiah(cartStore.totalPrice) }}</span>
+        <span class="angka-nota text-sm font-extrabold">{{ formatRupiah(cartStore.totalPrice) }}</span>
       </button>
     </div>
 
@@ -351,7 +365,7 @@ onMounted(() => {
       <Transition name="fade">
         <div
           v-if="isCartSheetOpen"
-          class="lg:hidden fixed inset-0 bg-black/40 z-40 backdrop-blur-sm"
+          class="lg:hidden fixed inset-0 bg-black/40 z-40"
           @click="isCartSheetOpen = false"
         />
       </Transition>
@@ -359,30 +373,29 @@ onMounted(() => {
       <Transition name="slide-up">
         <div
           v-if="isCartSheetOpen"
-          class="lg:hidden fixed bottom-0 left-0 right-0 z-50 bg-white rounded-t-3xl shadow-2xl max-h-[85vh] flex flex-col"
+          class="kertas lg:hidden fixed bottom-0 left-0 right-0 z-50 rounded-t-lg border-t max-h-[85vh] flex flex-col"
+          style="border-color: var(--tinta)"
         >
           <div class="flex justify-center pt-3 pb-1">
-            <div class="w-10 h-1 bg-gray-200 rounded-full"></div>
+            <div class="w-10 h-1 rounded-full" style="background: var(--garis)"></div>
           </div>
 
-          <div class="flex items-center justify-between px-5 py-3 border-b border-amber-100">
-            <div class="flex items-center gap-2">
-              <div class="w-7 h-7 rounded-xl bg-orange-100 flex items-center justify-center">
-                <i class="pi pi-shopping-cart text-orange-500" style="font-size: 12px"></i>
-              </div>
-              <h2 class="font-bold text-gray-800">Pesanan</h2>
-            </div>
+          <div class="flex items-center justify-between px-5 py-3 border-b border-dashed" style="border-color: var(--garis)">
+            <h2 class="angka-nota text-xs font-extrabold uppercase tracking-[0.22em]">Nota berjalan</h2>
             <div class="flex items-center gap-3">
               <span
                 v-if="cartStore.items.length > 0"
-                class="text-xs text-gray-400 hover:text-red-500 transition-colors cursor-pointer"
+                class="angka-nota text-[11px] font-bold uppercase underline underline-offset-2 cursor-pointer"
+                style="color: var(--bata-deep)"
                 @click="cartStore.clearCart()"
               >
-                Hapus semua
+                Sobek semua
               </span>
               <button
                 @click="isCartSheetOpen = false"
-                class="w-7 h-7 flex items-center justify-center rounded-xl text-gray-400 hover:bg-gray-100"
+                aria-label="Tutup nota"
+                class="w-7 h-7 flex items-center justify-center rounded hover:bg-black/5"
+                style="color: var(--tinta-soft)"
               >
                 <i class="pi pi-times" style="font-size: 11px"></i>
               </button>
@@ -392,20 +405,24 @@ onMounted(() => {
           <div class="flex-1 px-5 py-3 overflow-y-auto">
             <div
               v-if="cartStore.items.length === 0"
-              class="flex flex-col items-center justify-center py-10 gap-2"
+              class="flex flex-col items-center justify-center py-10 gap-1"
+              style="color: var(--tinta-soft)"
             >
-              <i class="pi pi-shopping-cart text-amber-200 text-3xl"></i>
-              <p class="text-sm text-gray-400">Keranjang kosong</p>
+              <p class="angka-nota text-[11px] uppercase tracking-[0.22em]">Kertas kosong</p>
+              <p class="text-sm">Ketuk label menu untuk mencatat.</p>
             </div>
-            <div v-else class="space-y-2.5">
+            <div v-else>
               <div
                 v-for="item in cartStore.items"
                 :key="item.id"
-                class="flex items-center gap-3 p-2.5 rounded-2xl bg-amber-50 border border-amber-100"
+                class="flex items-center gap-2.5 py-2.5 border-b border-dashed last:border-0"
+                style="border-color: var(--garis)"
               >
                 <button
                   @click="cartStore.deleteItem(item.id)"
-                  class="w-7 h-7 flex items-center justify-center text-red-400 hover:bg-red-50 rounded-xl flex-shrink-0"
+                  aria-label="Hapus item"
+                  class="w-7 h-7 flex items-center justify-center rounded flex-shrink-0"
+                  style="color: var(--bata-deep)"
                 >
                   <i class="pi pi-trash text-xs"></i>
                 </button>
@@ -414,34 +431,34 @@ onMounted(() => {
                   @error="handleImageError"
                   loading="lazy"
                   decoding="async"
-                  class="w-9 h-9 object-cover rounded-xl border border-amber-100 flex-shrink-0"
+                  class="w-9 h-9 object-cover rounded-[3px] border flex-shrink-0"
+                  style="border-color: var(--garis)"
                   :alt="item.name"
                 />
                 <div class="flex-1 min-w-0">
-                  <p class="text-sm font-semibold text-gray-800 truncate">{{ item.name }}</p>
-                  <p class="text-xs font-bold text-orange-500">
+                  <p class="text-sm font-bold truncate" style="color: var(--tinta)">{{ item.name }}</p>
+                  <p class="angka-nota text-xs font-bold" style="color: var(--tinta-soft)">
                     {{ formatRupiah(item.price * item.qty) }}
                   </p>
                 </div>
-                <div class="flex items-center gap-1.5 flex-shrink-0">
+                <div class="flex items-center gap-1 flex-shrink-0">
                   <button
                     @click="cartStore.removeFromCart(item.id)"
                     :disabled="item.qty === 1"
-                    class="w-7 h-7 rounded-xl text-sm flex items-center justify-center transition-colors"
-                    :class="
-                      item.qty === 1
-                        ? 'bg-gray-100 text-gray-300 cursor-not-allowed'
-                        : 'bg-white border border-gray-200 text-gray-600'
-                    "
+                    aria-label="Kurangi"
+                    class="w-7 h-7 rounded text-sm flex items-center justify-center border transition-colors disabled:opacity-30"
+                    style="border-color: var(--tinta); color: var(--tinta)"
                   >
                     <i class="pi pi-minus" style="font-size: 9px"></i>
                   </button>
-                  <span class="w-6 text-sm font-bold text-center text-gray-800">{{
+                  <span class="angka-nota w-6 text-sm font-extrabold text-center" style="color: var(--tinta)">{{
                     item.qty
                   }}</span>
                   <button
                     @click="cartStore.addToCart(item)"
-                    class="w-7 h-7 rounded-xl text-sm flex items-center justify-center bg-orange-400 text-white"
+                    aria-label="Tambah"
+                    class="w-7 h-7 rounded text-sm flex items-center justify-center"
+                    style="background: var(--tinta); color: var(--kertas)"
                   >
                     <i class="pi pi-plus" style="font-size: 9px"></i>
                   </button>
@@ -450,17 +467,16 @@ onMounted(() => {
             </div>
           </div>
 
-          <div class="px-5 py-4 border-t border-amber-100 bg-white">
-            <div class="flex justify-between font-bold text-gray-900 mb-3">
+          <div class="px-5 py-4 border-t-2" style="border-color: var(--tinta)">
+            <div class="flex justify-between font-extrabold mb-3" style="color: var(--tinta)">
               <span>Total</span>
-              <span class="text-xl text-orange-500">{{ formatRupiah(cartStore.totalPrice) }}</span>
+              <span class="angka-nota text-xl">{{ formatRupiah(cartStore.totalPrice) }}</span>
             </div>
             <button
               @click="openCheckout"
               :disabled="cartStore.items.length === 0"
-              class="w-full py-3.5 rounded-2xl font-bold text-white text-sm bg-orange-400 hover:bg-orange-500 transition-all shadow-sm disabled:opacity-30 disabled:cursor-not-allowed active:scale-95"
+              class="btn-bata w-full py-3.5 rounded-md font-extrabold text-sm uppercase tracking-[0.14em] transition-all disabled:opacity-30 disabled:cursor-not-allowed"
             >
-              <i class="pi pi-credit-card mr-2" style="font-size: 13px"></i>
               Proses Pembayaran
             </button>
           </div>
@@ -468,107 +484,87 @@ onMounted(() => {
       </Transition>
     </Teleport>
 
+    <!-- ===== STRUK BAYAR ===== -->
     <Dialog
       v-model:visible="isCheckoutVisible"
       modal
       :showHeader="false"
       :style="{
         width: 'min(26rem, calc(100vw - 2rem))',
-        borderRadius: '1.25rem',
+        borderRadius: '0.6rem',
         overflow: 'hidden',
       }"
       :pt="{
-        content: { style: 'padding: 0' },
-        root: { style: 'border-radius: 1.25rem; overflow: hidden' },
+        content: { style: 'padding: 0; background: transparent' },
+        root: { style: 'border-radius: 0.6rem; overflow: hidden' },
       }"
     >
-      <div
-        class="flex items-center justify-between px-5 sm:px-6 pt-5 pb-4 border-b border-gray-100"
-      >
-        <div class="flex items-center gap-2.5">
-          <div class="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center">
-            <i class="pi pi-credit-card text-orange-500" style="font-size: 11px"></i>
-          </div>
-          <h3 class="text-base font-semibold text-gray-800">Konfirmasi Pembayaran</h3>
-        </div>
-        <button
-          @click="isCheckoutVisible = false"
-          class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100"
-        >
-          <i class="pi pi-times" style="font-size: 11px"></i>
-        </button>
+      <div class="nota-slip px-5 sm:px-6 pt-5 pb-4 text-center">
+        <p class="angka-nota text-[11px] font-extrabold tracking-[0.24em] uppercase" style="color: var(--bata-deep)">Kantin Mardira</p>
+        <p class="angka-nota text-[11px] tracking-[0.14em] uppercase" style="color: var(--tinta)">Struk pembayaran · STMIK Mardira</p>
       </div>
+      <div class="sobek sobek-kuning" aria-hidden="true"></div>
 
-      <div class="px-5 sm:px-6 py-5 space-y-4">
-        <div
-          class="flex items-center justify-between p-4 bg-amber-50 rounded-2xl ring-1 ring-amber-100"
-        >
-          <span class="text-sm text-gray-500">Total Tagihan</span>
-          <span class="text-xl sm:text-2xl font-bold text-orange-500">{{
+      <div class="kertas px-5 sm:px-6 py-5 space-y-4">
+        <div class="text-center">
+          <p class="angka-nota text-[11px] uppercase tracking-[0.2em]" style="color: var(--tinta-soft)">Total tagihan</p>
+          <p class="angka-nota text-3xl font-extrabold" style="color: var(--tinta)">{{
             formatRupiah(cartStore.totalPrice)
-          }}</span>
+          }}</p>
         </div>
 
+        <div class="garis-struk"></div>
+
         <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider">
-            Nama Pemesan <span class="normal-case font-normal">(Opsional)</span>
+          <label for="nama-pemesan" class="angka-nota text-[11px] font-bold uppercase tracking-[0.18em]" style="color: var(--tinta-soft)">
+            Nama pemesan <span class="normal-case font-medium">(opsional)</span>
           </label>
-          <div class="relative">
-            <i
-              class="pi pi-user absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-300 pointer-events-none"
-              style="font-size: 13px"
-            ></i>
-            <input
-              v-model="customerName"
-              type="text"
-              placeholder="Masukkan nama pembeli..."
-              class="w-full pl-9 pr-4 py-3 text-sm bg-gray-50 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 focus:bg-white transition-all placeholder-gray-300 text-gray-800"
-            />
-          </div>
+          <input
+            id="nama-pemesan"
+            v-model="customerName"
+            type="text"
+            placeholder="Tulis nama pembeli…"
+            class="w-full px-4 py-3 text-sm rounded-md border-2 bg-white/70 placeholder:text-stone-400 focus:outline-none transition-colors"
+            style="border-color: var(--garis); color: var(--tinta)"
+            onfocus="this.style.borderColor='var(--bata)'"
+            onblur="this.style.borderColor='var(--garis)'"
+          />
         </div>
 
         <div class="flex flex-col gap-1.5">
-          <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider"
-            >Metode Pembayaran</label
-          >
-          <div class="grid grid-cols-2 gap-2">
+          <span class="angka-nota text-[11px] font-bold uppercase tracking-[0.18em]" style="color: var(--tinta-soft)">Cara bayar</span>
+          <div class="grid grid-cols-2 gap-2" role="radiogroup" aria-label="Metode pembayaran">
             <button
               v-for="method in ['cash', 'qris']"
               :key="method"
               @click="selectedPayment = method"
-              class="flex items-center justify-center gap-2 py-3 text-sm font-semibold transition-all border-2 capitalize rounded-xl"
-              :class="
-                selectedPayment === method
-                  ? 'border-orange-300 bg-orange-50 text-orange-600 ring-2 ring-orange-100'
-                  : 'border-gray-200 text-gray-400 hover:border-gray-300 bg-white'
-              "
+              :aria-pressed="selectedPayment === method"
+              class="py-3 text-sm font-extrabold uppercase tracking-[0.12em] transition-all border-2 rounded-md"
+              :style="selectedPayment === method
+                ? 'border-color: var(--tinta); background: var(--tinta); color: var(--kertas)'
+                : 'border-color: var(--garis); color: var(--tinta-soft); background: transparent'"
             >
-              <i
-                :class="method === 'cash' ? 'pi pi-money-bill' : 'pi pi-qrcode'"
-                style="font-size: 14px"
-              ></i>
-              {{ method.toUpperCase() }}
+              {{ method === 'cash' ? 'Tunai' : 'QRIS' }}
             </button>
           </div>
         </div>
 
         <div v-if="selectedPayment === 'cash'" class="flex flex-col gap-1.5">
-          <label class="text-xs font-semibold text-gray-400 uppercase tracking-wider"
-            >Uang Diterima</label
-          >
+          <label class="angka-nota text-[11px] font-bold uppercase tracking-[0.18em]" style="color: var(--tinta-soft)">Uang diterima</label>
           <InputNumber
             v-model="paidAmount"
             mode="currency"
             currency="IDR"
             locale="id-ID"
-            class="w-full"
+            class="w-full angka-nota"
           />
           <div
             v-if="paidAmount >= cartStore.totalPrice"
-            class="flex justify-between text-sm bg-green-50 rounded-xl px-3 py-2 mt-1"
+            class="flex justify-between text-sm rounded-md px-3 py-2 mt-1 border-2"
+            style="border-color: var(--papan); color: var(--papan-deep); background: rgba(32,73,58,.07)"
           >
-            <span class="text-gray-500">Kembalian</span>
-            <span class="font-bold text-green-600">{{
+            <span>Kembalian</span>
+            <span class="angka-nota font-extrabold">{{
               formatRupiah(paidAmount - cartStore.totalPrice)
             }}</span>
           </div>
@@ -576,28 +572,27 @@ onMounted(() => {
 
         <div
           v-else
-          class="flex items-center gap-2 p-3 text-sm text-blue-600 bg-blue-50 rounded-xl ring-1 ring-blue-100"
+          class="p-3 text-sm rounded-md border-2"
+          style="border-color: var(--tinta); color: var(--tinta)"
         >
-          <i class="pi pi-info-circle flex-shrink-0"></i>
-          <span>Minta pelanggan scan QRIS. Pembayaran dianggap lunas.</span>
+          <span>Minta pelanggan pindai QRIS. Dianggap lunas.</span>
         </div>
       </div>
 
-      <div class="flex gap-2 px-5 sm:px-6 pb-5 pt-1">
+      <div class="kertas flex gap-2 px-5 sm:px-6 pb-5 pt-1">
         <button
           @click="isCheckoutVisible = false"
-          class="flex-1 py-2.5 text-sm text-gray-600 font-medium bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+          class="flex-1 py-2.5 text-sm font-bold rounded-md border-2 transition-colors"
+          style="border-color: var(--tinta); color: var(--tinta)"
         >
           Batal
         </button>
         <button
           @click="submitTransaction"
           :disabled="isSubmitting"
-          class="flex-1 py-2.5 font-semibold text-white bg-orange-400 hover:bg-orange-500 transition-all rounded-xl shadow-sm disabled:opacity-50"
+          class="btn-bata flex-1 py-2.5 font-extrabold text-sm uppercase tracking-[0.12em] rounded-md transition-all disabled:opacity-50"
         >
-          <i v-if="isSubmitting" class="pi pi-spin pi-spinner mr-2" style="font-size: 12px"></i>
-          <i v-else class="pi pi-check mr-2" style="font-size: 12px"></i>
-          Selesaikan
+          {{ isSubmitting ? 'Mencatat…' : 'Selesaikan' }}
         </button>
       </div>
     </Dialog>
@@ -622,14 +617,5 @@ onMounted(() => {
 .slide-up-enter-from,
 .slide-up-leave-to {
   transform: translateY(100%);
-}
-
-/* Hide scrollbar for category pills */
-.scrollbar-hide {
-  -ms-overflow-style: none;
-  scrollbar-width: none;
-}
-.scrollbar-hide::-webkit-scrollbar {
-  display: none;
 }
 </style>

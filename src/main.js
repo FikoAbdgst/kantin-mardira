@@ -4,6 +4,7 @@ import PrimeVue from 'primevue/config'
 import Aura from '@primevue/themes/aura'
 import 'sweetalert2/dist/sweetalert2.min.css'
 import '@/assets/main.css'
+import '@/assets/kantin.css'
 import 'primeicons/primeicons.css'
 
 import App from './App.vue'

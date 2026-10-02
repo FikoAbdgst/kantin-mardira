@@ -1,0 +1,266 @@
+/* KANTIN MARDIRA — dunia "arsip nota kantin"
+   THESIS: POS yang hidup di fisik kantin kampus (nota kuning, papan tulis
+   hijau, formika bata, krem dinding), bukan dashboard SaaS.
+   OWN-WORLD: krem #f4eee1, nota #f3c430, papan #20493a, bata #a63a26,
+   tinta #2a2118; harga selalu mono-tabular; kartu = slip nota bergerigi.
+   FINISH: unreviewed and undocumented is unfinished. */
+
+:root {
+  --krem: #f4eee1;
+  --krem-deep: #e9dfc9;
+  --kertas: #fbf6ea;
+  --nota: #f3c430;
+  --nota-soft: #f9dc6e;
+  --nota-deep: #c99a12;
+  --papan: #20493a;
+  --papan-deep: #143325;
+  --kapur: #f0ebda;
+  --kapur-redup: #b9c4ae;
+  --bata: #a63a26;
+  --bata-deep: #7c2717;
+  --tinta: #2a2118;
+  --tinta-soft: #6f6250;
+  --garis: #ddd0b4;
+}
+
+html {
+  background: var(--krem);
+}
+
+body {
+  background: var(--krem);
+  color: var(--tinta);
+  font-family:
+    system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* ——— angka struk: mono fungsional, tabular ——— */
+.angka-nota,
+input.angka-nota {
+  font-family: ui-monospace, 'Cascadia Mono', 'Roboto Mono', Menlo, Consolas, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+
+/* ——— kertas krem bertekstur ——— */
+.kertas {
+  background-color: var(--kertas);
+  background-image:
+    repeating-linear-gradient(0deg, rgba(42, 33, 24, 0.022) 0 1px, transparent 1px 3px),
+    repeating-linear-gradient(90deg, rgba(42, 33, 24, 0.016) 0 1px, transparent 1px 4px);
+}
+
+.dinding {
+  background-color: var(--krem);
+  background-image: radial-gradient(rgba(42, 33, 24, 0.055) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+}
+
+/* ——— slip nota kuning ——— */
+.nota-slip {
+  background-color: var(--nota);
+  background-image:
+    repeating-linear-gradient(0deg, rgba(124, 39, 23, 0.05) 0 1px, transparent 1px 4px);
+}
+
+/* ——— tepi sobek / perforasi horizontal ——— */
+.sobek {
+  --sobek-isi: var(--kertas);
+  height: 9px;
+  background-image: radial-gradient(circle at 7px 50%, transparent 4.2px, var(--sobek-isi) 4.8px);
+  background-size: 14px 9px;
+  background-repeat: repeat-x;
+}
+.sobek-kuning {
+  --sobek-isi: var(--nota);
+}
+.sobek-bawah {
+  transform: rotate(180deg);
+}
+
+/* garis putus-putus struk */
+.garis-struk {
+  border-top: 1.5px dashed rgba(42, 33, 24, 0.35);
+}
+
+/* ——— papan tulis hijau ——— */
+.papan-tulis {
+  background-color: var(--papan);
+  background-image:
+    radial-gradient(ellipse 80% 60% at 50% 0%, rgba(255, 255, 255, 0.07), transparent 70%),
+    repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.018) 0 2px, transparent 2px 5px);
+  box-shadow: inset 0 0 0 6px #6b4a2e, inset 0 0 0 8px rgba(0, 0, 0, 0.35);
+}
+.tulisan-kapur {
+  color: var(--kapur);
+  text-shadow: 0 0 1px rgba(240, 235, 218, 0.6);
+}
+.kapur-redup {
+  color: var(--kapur-redup);
+}
+
+/* ——— stempel ——— */
+.cap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  border: 2px solid currentColor;
+  box-shadow: inset 0 0 0 1px currentColor;
+  border-radius: 6px;
+  padding: 0.15rem 0.55rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  font-size: 0.65rem;
+  opacity: 0.92;
+}
+
+/* tombol formika bata */
+.btn-bata {
+  background: linear-gradient(180deg, #b4452f, var(--bata) 55%, var(--bata-deep));
+  color: #fdf6e9;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.25) inset,
+    0 10px 22px -10px rgba(124, 39, 23, 0.55);
+}
+.btn-bata:hover {
+  filter: brightness(1.06);
+}
+.btn-bata:active {
+  transform: scale(0.98);
+}
+
+/* ——— browser surfaces bertema ——— */
+::selection {
+  background: var(--nota);
+  color: var(--tinta);
+}
+:focus-visible {
+  outline: 2px solid var(--bata);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #c9b98f transparent;
+}
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #c9b98f;
+  border-radius: 8px;
+}
+
+/* ——— jembatan dunia untuk komponen admin lawas ———
+   Komponen admin yang belum ditulis ulang masih memakai utilitas
+   orange/amber bawaan. Alihkan ke token kantin di sini agar seluruh
+   aplikasi satu dunia tanpa menyentuh logikanya. */
+.bg-orange-400 { background-color: var(--bata); }
+.hover\:bg-orange-500:hover { background-color: var(--bata-deep); }
+.bg-orange-100 { background-color: #f0dcae; }
+.bg-orange-50 { background-color: #f7ecd2; }
+.text-orange-500, .text-orange-600 { color: var(--bata-deep); }
+.border-orange-300 { border-color: var(--bata); }
+.ring-orange-100, .ring-orange-200 { --tw-ring-color: var(--garis); }
+.focus\:ring-orange-200:focus { --tw-ring-color: var(--garis); }
+.focus\:border-orange-300:focus { border-color: var(--bata); }
+.bg-amber-100 { background-color: var(--nota-soft); }
+.bg-amber-50 { background-color: #f7ecd2; }
+.text-amber-200 { color: #c9b98f; }
+.text-amber-500, .text-amber-600 { color: var(--nota-deep); }
+.border-amber-100 { border-color: var(--garis); }
+.ring-amber-100, .ring-amber-200 { --tw-ring-color: var(--garis); }
+
+/* ——— tabel bon: DataTable PrimeVue rasa buku kas ———
+   Pakai dengan class `tabel-bon` pada pembungkus DataTable. */
+.tabel-bon .p-datatable-table {
+  border-collapse: collapse;
+  background: transparent;
+}
+.tabel-bon .p-datatable-tbody > tr,
+.tabel-bon .p-datatable-tbody > tr > td,
+.tabel-bon .p-datatable-emptymessage > td {
+  background: transparent;
+}
+.tabel-bon .p-datatable-thead > tr > th {
+  background: transparent;
+  color: var(--tinta-soft);
+  font-family: ui-monospace, 'Cascadia Mono', Menlo, Consolas, monospace;
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  border-bottom: 2px solid var(--tinta);
+  padding: 0.8rem 1rem;
+  white-space: nowrap;
+}
+.tabel-bon .p-datatable-tbody > tr > td {
+  color: var(--tinta);
+  border-bottom: 1px dashed var(--garis);
+  padding: 0.8rem 1rem;
+}
+.tabel-bon .p-datatable-tbody > tr:last-child > td {
+  border-bottom: none;
+}
+.tabel-bon .p-datatable-tbody > tr:hover > td {
+  background: rgba(42, 33, 24, 0.035);
+}
+.tabel-bon .p-datatable-emptymessage > td {
+  border-bottom: none;
+}
+.tabel-bon .p-paginator {
+  background: transparent;
+  border-top: 2px solid var(--tinta);
+  padding: 0.6rem 1rem;
+}
+.tabel-bon .p-paginator .p-paginator-pages .p-paginator-page,
+.tabel-bon .p-paginator .p-paginator-first,
+.tabel-bon .p-paginator .p-paginator-prev,
+.tabel-bon .p-paginator .p-paginator-next,
+.tabel-bon .p-paginator .p-paginator-last {
+  color: var(--tinta-soft);
+  border-radius: 6px;
+  min-width: 2rem;
+  height: 2rem;
+}
+.tabel-bon .p-paginator .p-paginator-page.p-highlight {
+  background: var(--tinta);
+  color: var(--kertas);
+  border-color: var(--tinta);
+}
+
+/* ——— isi dialog kertas: input & label mengikuti dunia ———
+   (inline style tetap menang bila ada) */
+.kertas input[type='text'],
+.kertas input[type='email'],
+.kertas input[type='password'],
+.kertas input[type='number'],
+.kertas input[type='date'],
+.kertas select {
+  border-color: var(--garis);
+  color: var(--tinta);
+}
+.kertas input:focus,
+.kertas select:focus {
+  border-color: var(--bata);
+}
+.kertas label {
+  color: var(--tinta-soft);
+}
+
+/* sweetalert ikut dunia */
+.swal2-popup.pos-swal-popup,
+.swal2-toast {
+  border-radius: 0.9rem;
+  background: var(--kertas);
+  border: 1px solid var(--garis);
+}
+.swal2-toast {
+  box-shadow: 0 18px 45px rgba(42, 33, 24, 0.22);
+}
+.pos-swal-confirm {
+  background: linear-gradient(180deg, #b4452f, var(--bata-deep)) !important;
+}

@@ -54,148 +54,138 @@ const openHistoryDetail = async (id) => {
 onMounted(fetchHistory)
 </script>
 
+<!-- Arsip bon hari ini: baris buku kas + detail berupa struk. -->
 <template>
   <div class="flex-1 overflow-y-auto p-4 sm:p-5 lg:p-8">
     <div class="max-w-6xl mx-auto space-y-5 sm:space-y-6">
-      <!-- Page Header -->
       <div class="flex items-center justify-between gap-4">
         <div>
-          <h2 class="text-lg sm:text-xl font-bold text-gray-800">Riwayat Transaksi</h2>
-          <p class="text-xs sm:text-sm text-gray-400 mt-0.5">
-            Semua transaksi yang diproses hari ini.
+          <p class="angka-nota text-[11px] font-bold uppercase tracking-[0.22em]" style="color: var(--bata)">Arsip bon</p>
+          <h2 class="text-lg sm:text-xl font-extrabold" style="color: var(--tinta)">Riwayat transaksi</h2>
+          <p class="text-xs sm:text-sm mt-0.5" style="color: var(--tinta-soft)">
+            Semua yang tercatat hari ini, berurutan seperti tumpukan struk.
           </p>
         </div>
         <button
           @click="fetchHistory"
-          class="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 bg-orange-400 hover:bg-orange-500 text-white text-xs sm:text-sm font-semibold rounded-2xl shadow-sm transition-colors flex-shrink-0"
+          class="inline-flex items-center gap-2 px-3 sm:px-4 py-2 sm:py-2.5 text-xs sm:text-sm font-bold rounded-md border-2 transition-colors flex-shrink-0"
+          style="border-color: var(--tinta); color: var(--tinta)"
         >
-          <i class="pi pi-refresh text-xs"></i>
-          <span class="hidden sm:inline">Refresh</span>
+          <span class="hidden sm:inline">Muat ulang</span>
+          <span class="sm:hidden">Muat</span>
         </button>
       </div>
 
-      <!-- Card container -->
-      <div class="bg-white rounded-3xl border border-amber-100 shadow-sm overflow-hidden">
-        <!-- Table Header -->
-        <div
-          class="flex items-center justify-between px-4 sm:px-6 py-4 sm:py-5 border-b border-amber-100"
-        >
+      <div class="tabel-bon kertas rounded-md border-2 overflow-hidden" style="border-color: var(--tinta)">
+        <div class="flex items-center justify-between px-4 sm:px-6 py-4 border-b border-dashed" style="border-color: var(--garis)">
           <div>
-            <h3 class="font-bold text-gray-800 text-sm sm:text-base">Daftar Transaksi</h3>
-            <p class="text-xs text-gray-400 mt-0.5 hidden sm:block">
-              Klik ikon mata untuk lihat detail struk
+            <h3 class="font-extrabold text-sm sm:text-base" style="color: var(--tinta)">Tumpukan struk</h3>
+            <p class="angka-nota text-[11px] uppercase tracking-[0.18em] mt-0.5" style="color: var(--tinta-soft)">
+              Ketuk baris untuk membuka struk
             </p>
           </div>
-          <span
-            class="text-xs font-semibold text-orange-600 bg-orange-50 px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-full ring-1 ring-orange-100"
-          >
-            {{ transactionsHistory.length }} transaksi
-          </span>
+          <span class="cap" style="color: var(--bata-deep)">{{ transactionsHistory.length }} bon</span>
         </div>
 
-        <!-- Loading skeleton (mobile) -->
-        <div v-if="isLoadingHistory" class="divide-y divide-amber-50">
+        <div v-if="isLoadingHistory" class="divide-y divide-dashed" style="border-color: var(--garis)">
           <div v-for="i in 5" :key="i" class="px-4 py-3.5 animate-pulse flex gap-3 items-center">
-            <div class="w-9 h-9 rounded-full bg-gray-100 flex-shrink-0"></div>
+            <div class="w-9 h-9 rounded-full flex-shrink-0" style="background: var(--krem-deep)"></div>
             <div class="flex-1 space-y-1.5">
-              <div class="h-3 bg-gray-100 rounded w-2/3"></div>
-              <div class="h-3 bg-gray-100 rounded w-1/3"></div>
+              <div class="h-3 rounded w-2/3" style="background: var(--krem-deep)"></div>
+              <div class="h-3 rounded w-1/3" style="background: var(--krem-deep)"></div>
             </div>
-            <div class="h-4 bg-gray-100 rounded w-20 flex-shrink-0"></div>
+            <div class="h-4 rounded w-20 flex-shrink-0" style="background: var(--krem-deep)"></div>
           </div>
         </div>
 
-        <!-- Empty state -->
         <div
           v-else-if="transactionsHistory.length === 0"
-          class="flex flex-col items-center justify-center py-16 text-gray-400"
+          class="flex flex-col items-center justify-center py-16"
+          style="color: var(--tinta-soft)"
         >
-          <i class="pi pi-receipt text-4xl mb-3 text-amber-200"></i>
-          <p class="text-sm font-medium">Belum ada riwayat transaksi.</p>
+          <p class="angka-nota text-[11px] uppercase tracking-[0.22em]">Belum ada bon</p>
+          <p class="text-sm font-medium mt-1">Transaksi pertama hari ini belum tercatat.</p>
         </div>
 
-        <!-- Mobile Card List (< md) -->
-        <div v-else class="md:hidden divide-y divide-amber-50">
+        <!-- Mobile -->
+        <div v-else class="md:hidden divide-y divide-dashed" style="border-color: var(--garis)">
           <div
             v-for="trx in transactionsHistory"
             :key="trx.id"
             @click="openHistoryDetail(trx.id)"
-            class="flex items-center gap-3 px-4 py-3.5 active:bg-amber-50 transition-colors cursor-pointer"
+            class="flex items-center gap-3 px-4 py-3.5 cursor-pointer transition-colors hover:bg-black/[0.03]"
             :class="{ 'opacity-60': fetchingDetailId === trx.id }"
           >
-            <!-- Avatar -->
             <div
-              class="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-sm flex-shrink-0"
+              class="w-10 h-10 rounded-full flex items-center justify-center font-extrabold text-sm flex-shrink-0 border-2"
+              style="background: var(--nota); border-color: var(--tinta); color: var(--tinta)"
             >
               {{ (trx.customer_name || 'U').charAt(0).toUpperCase() }}
             </div>
 
-            <!-- Info -->
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-2 mb-0.5">
-                <p class="text-sm font-semibold text-gray-800 truncate">
-                  {{ trx.customer_name || 'Pelanggan Umum' }}
+                <p class="text-sm font-bold truncate" style="color: var(--tinta)">
+                  {{ trx.customer_name || 'Pelanggan umum' }}
                 </p>
-                <span
-                  class="px-1.5 py-0.5 text-xs font-bold uppercase rounded-md flex-shrink-0"
-                  :class="
-                    trx.payment_method === 'cash'
-                      ? 'bg-blue-50 text-blue-500'
-                      : 'bg-purple-50 text-purple-500'
-                  "
-                >
-                  {{ trx.payment_method }}
+                <span class="angka-nota text-[10px] font-extrabold uppercase tracking-wider flex-shrink-0" style="color: var(--tinta-soft)">
+                  {{ trx.payment_method === 'cash' ? 'Tunai' : 'QRIS' }}
                 </span>
               </div>
-              <p class="text-xs text-gray-400 font-mono">{{ trx.transaction_code }}</p>
-              <p class="text-xs text-gray-400 mt-0.5">
+              <p class="angka-nota text-xs" style="color: var(--tinta-soft)">{{ trx.transaction_code }}</p>
+              <p class="text-xs mt-0.5" style="color: var(--tinta-soft)">
                 {{ formatDate(trx.transaction_time || trx.created_at) }}
               </p>
             </div>
 
-            <!-- Amount + chevron -->
             <div class="flex items-center gap-1.5 flex-shrink-0">
-              <span class="text-sm font-bold text-orange-500">{{
+              <span class="angka-nota text-sm font-extrabold" style="color: var(--tinta)">{{
                 formatRupiah(trx.total_amount)
               }}</span>
               <i
-                :class="
-                  fetchingDetailId === trx.id ? 'pi pi-spin pi-spinner' : 'pi pi-chevron-right'
-                "
-                class="text-gray-300"
-                style="font-size: 11px"
+                :class="fetchingDetailId === trx.id ? 'pi pi-spin pi-spinner' : 'pi pi-chevron-right'"
+                style="font-size: 11px; color: var(--tinta-soft)"
               ></i>
             </div>
           </div>
         </div>
 
-        <!-- Desktop DataTable (>= md) -->
+        <!-- Desktop -->
         <div class="hidden md:block">
+          <div v-if="isLoadingHistory" class="px-6 py-2" aria-label="Memuat riwayat">
+            <div v-for="i in 6" :key="i" class="flex items-center gap-3 py-3.5 border-b border-dashed last:border-0 animate-pulse" style="border-color: var(--garis)">
+              <div class="w-9 h-9 rounded-full flex-shrink-0" style="background: var(--krem-deep)"></div>
+              <div class="flex-1 space-y-1.5">
+                <div class="h-3 rounded w-2/5" style="background: var(--krem-deep)"></div>
+                <div class="h-3 rounded w-1/4" style="background: var(--krem-deep)"></div>
+              </div>
+              <div class="h-4 rounded w-24 flex-shrink-0" style="background: var(--krem-deep)"></div>
+            </div>
+          </div>
           <DataTable
+            v-else
             :value="transactionsHistory"
-            :loading="isLoadingHistory"
             scrollable
             scrollHeight="calc(100vh - 280px)"
             :rowHover="true"
           >
             <template #empty>
-              <div class="flex flex-col items-center justify-center py-16 text-gray-400">
-                <i class="pi pi-receipt text-4xl mb-3 text-amber-200"></i>
-                <p class="text-sm font-medium">Belum ada riwayat transaksi.</p>
+              <div class="flex flex-col items-center justify-center py-16" style="color: var(--tinta-soft)">
+                <p class="angka-nota text-[11px] uppercase tracking-[0.22em]">Belum ada bon</p>
               </div>
             </template>
 
             <Column field="created_at" header="Waktu">
               <template #body="{ data }">
-                <span class="text-sm text-gray-500">{{
+                <span class="text-sm" style="color: var(--tinta-soft)">{{
                   formatDate(data.transaction_time || data.created_at)
                 }}</span>
               </template>
             </Column>
 
-            <Column field="transaction_code" header="Kode Struk">
+            <Column field="transaction_code" header="Kode struk">
               <template #body="{ data }">
-                <span class="font-mono text-sm font-semibold text-gray-700">{{
+                <span class="angka-nota text-sm font-bold" style="color: var(--tinta)">{{
                   data.transaction_code
                 }}</span>
               </template>
@@ -205,53 +195,43 @@ onMounted(fetchHistory)
               <template #body="{ data }">
                 <div class="flex items-center gap-2">
                   <div
-                    class="w-7 h-7 rounded-full bg-orange-100 flex items-center justify-center text-orange-600 font-bold text-xs flex-shrink-0"
+                    class="w-7 h-7 rounded-full flex items-center justify-center font-extrabold text-xs flex-shrink-0 border"
+                    style="background: var(--nota); border-color: var(--tinta); color: var(--tinta)"
                   >
                     {{ (data.customer_name || 'U').charAt(0).toUpperCase() }}
                   </div>
-                  <span class="font-medium text-gray-800">{{
-                    data.customer_name || 'Pelanggan Umum'
+                  <span class="font-bold" style="color: var(--tinta)">{{
+                    data.customer_name || 'Pelanggan umum'
                   }}</span>
                 </div>
               </template>
             </Column>
 
-            <Column field="payment_method" header="Metode">
+            <Column field="payment_method" header="Cara bayar">
               <template #body="{ data }">
-                <span
-                  class="px-2.5 py-1 text-xs font-bold tracking-wide uppercase rounded-lg"
-                  :class="
-                    data.payment_method === 'cash'
-                      ? 'bg-blue-50 text-blue-600 ring-1 ring-blue-100'
-                      : 'bg-purple-50 text-purple-600 ring-1 ring-purple-100'
-                  "
-                >
-                  <i
-                    :class="data.payment_method === 'cash' ? 'pi pi-money-bill' : 'pi pi-qrcode'"
-                    class="mr-1"
-                    style="font-size: 10px"
-                  ></i>
-                  {{ data.payment_method }}
+                <span class="angka-nota text-xs font-extrabold uppercase tracking-wider">
+                  {{ data.payment_method === 'cash' ? 'Tunai' : 'QRIS' }}
                 </span>
               </template>
             </Column>
 
             <Column field="total_amount" header="Total">
               <template #body="{ data }">
-                <span class="font-bold text-orange-500">{{ formatRupiah(data.total_amount) }}</span>
+                <span class="angka-nota font-extrabold" style="color: var(--tinta)">{{ formatRupiah(data.total_amount) }}</span>
               </template>
             </Column>
 
-            <Column header="Aksi" align="center" style="width: 80px">
+            <Column header="Struk" align="center" style="width: 80px">
               <template #body="{ data }">
                 <button
                   @click="openHistoryDetail(data.id)"
                   :disabled="fetchingDetailId !== null"
-                  class="w-8 h-8 flex items-center justify-center rounded-xl text-gray-400 hover:bg-orange-50 hover:text-orange-500 transition-colors disabled:opacity-40"
-                  title="Lihat Detail"
+                  class="w-8 h-8 inline-flex items-center justify-center rounded border transition-colors disabled:opacity-40"
+                  style="border-color: var(--garis); color: var(--tinta)"
+                  title="Lihat struk"
                 >
                   <i
-                    :class="fetchingDetailId === data.id ? 'pi pi-spin pi-spinner' : 'pi pi-eye'"
+                    :class="fetchingDetailId === data.id ? 'pi pi-spin pi-spinner' : 'pi pi-receipt'"
                     style="font-size: 13px"
                   ></i>
                 </button>
@@ -262,114 +242,94 @@ onMounted(fetchHistory)
       </div>
     </div>
 
-    <!-- Detail Dialog -->
+    <!-- Struk pembelian -->
     <Dialog
       v-model:visible="isHistoryDetailVisible"
       modal
       :showHeader="false"
-      :style="{
-        width: 'min(420px, calc(100vw - 2rem))',
-        borderRadius: '1.25rem',
-        overflow: 'hidden',
-      }"
+      :style="{ width: 'min(420px, calc(100vw - 2rem))', borderRadius: '0.6rem', overflow: 'hidden' }"
       :pt="{
-        content: { style: 'padding: 0' },
-        root: { style: 'border-radius: 1.25rem; overflow: hidden' },
+        content: { style: 'padding: 0; background: transparent' },
+        root: { style: 'border-radius: 0.6rem; overflow: hidden' },
       }"
     >
-      <!-- Dialog Header -->
-      <div
-        class="flex items-center justify-between px-5 sm:px-6 pt-5 pb-4 border-b border-gray-100"
-      >
-        <div class="flex items-center gap-2.5">
-          <div class="w-7 h-7 rounded-lg bg-orange-100 flex items-center justify-center">
-            <i class="pi pi-receipt text-orange-500" style="font-size: 11px"></i>
-          </div>
-          <h3 class="text-base font-semibold text-gray-800">Struk Pembelian</h3>
-        </div>
-        <button
-          @click="isHistoryDetailVisible = false"
-          class="w-7 h-7 flex items-center justify-center rounded-lg text-gray-400 hover:bg-gray-100"
-        >
-          <i class="pi pi-times" style="font-size: 11px"></i>
-        </button>
+      <div class="nota-slip px-5 sm:px-6 pt-5 pb-4 text-center">
+        <p class="angka-nota text-[11px] font-extrabold tracking-[0.24em] uppercase" style="color: var(--bata-deep)">Kantin Mardira</p>
+        <p class="angka-nota text-[11px] tracking-[0.14em] uppercase" style="color: var(--tinta)">Struk pembelian · STMIK Mardira</p>
       </div>
+      <div class="sobek sobek-kuning" aria-hidden="true"></div>
 
-      <div v-if="selectedTransaction" class="px-5 sm:px-6 py-5 space-y-4">
-        <!-- Info -->
-        <div class="bg-amber-50 rounded-2xl p-4 space-y-2">
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-400">Kode Transaksi</span>
-            <span class="font-bold font-mono text-gray-800 text-xs sm:text-sm">{{
+      <div v-if="selectedTransaction" class="kertas px-5 sm:px-6 py-5 space-y-4">
+        <div class="angka-nota text-[13px] space-y-1.5">
+          <div class="flex justify-between gap-3">
+            <span style="color: var(--tinta-soft)">Kode</span>
+            <span class="font-bold text-right" style="color: var(--tinta)">{{
               selectedTransaction.transaction_code
             }}</span>
           </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-400">Nama Pemesan</span>
-            <span class="font-medium text-gray-800">{{
-              selectedTransaction.customer_name || 'Pelanggan Umum'
+          <div class="flex justify-between gap-3">
+            <span style="color: var(--tinta-soft)">Pemesan</span>
+            <span class="font-bold" style="color: var(--tinta)">{{
+              selectedTransaction.customer_name || 'Pelanggan umum'
             }}</span>
           </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-400">Kasir</span>
-            <span class="text-gray-800">{{ selectedTransaction.cashier?.name || 'Kasir' }}</span>
+          <div class="flex justify-between gap-3">
+            <span style="color: var(--tinta-soft)">Kasir</span>
+            <span style="color: var(--tinta)">{{ selectedTransaction.cashier?.name || 'Kasir' }}</span>
           </div>
         </div>
 
-        <!-- Items -->
-        <div class="space-y-2">
-          <p class="text-xs font-semibold text-gray-400 uppercase tracking-wider">Item Pesanan</p>
+        <div class="garis-struk"></div>
+
+        <div>
+          <p class="angka-nota text-[11px] font-bold uppercase tracking-[0.2em] mb-1" style="color: var(--tinta-soft)">Isi bon</p>
           <div
             v-for="item in selectedTransaction.items"
             :key="item.id"
-            class="flex justify-between items-center text-sm py-2 border-b border-dashed border-gray-100 last:border-0"
+            class="flex justify-between items-center text-sm py-2 border-b border-dashed last:border-0"
+            style="border-color: var(--garis)"
           >
-            <div class="flex gap-2 items-center">
-              <span
-                class="w-6 h-6 rounded-lg bg-orange-100 text-orange-600 text-xs font-bold flex items-center justify-center flex-shrink-0"
-              >
+            <div class="flex gap-2 items-center min-w-0">
+              <span class="angka-nota w-6 h-6 rounded text-xs font-extrabold flex items-center justify-center flex-shrink-0" style="background: var(--tinta); color: var(--kertas)">
                 {{ item.quantity }}
               </span>
-              <span class="text-gray-800">{{ item.menu?.name || 'Menu Terhapus' }}</span>
+              <span class="font-semibold truncate" style="color: var(--tinta)">{{ item.menu?.name || 'Menu terhapus' }}</span>
             </div>
-            <span class="font-semibold text-gray-700">{{ formatRupiah(item.subtotal) }}</span>
+            <span class="angka-nota font-bold flex-shrink-0" style="color: var(--tinta)">{{ formatRupiah(item.subtotal) }}</span>
           </div>
         </div>
 
-        <!-- Totals -->
-        <div class="bg-gray-50 rounded-2xl p-4 space-y-2">
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-400">Total Tagihan</span>
-            <span class="font-bold text-gray-800">{{
+        <div class="garis-struk"></div>
+
+        <div class="angka-nota text-sm space-y-1.5">
+          <div class="flex justify-between">
+            <span style="color: var(--tinta-soft)">Total</span>
+            <span class="font-extrabold" style="color: var(--tinta)">{{
               formatRupiah(selectedTransaction.total_amount)
             }}</span>
           </div>
-          <div class="flex justify-between text-sm">
-            <span class="text-gray-400">
-              Uang Diterima
-              <span
-                class="uppercase font-semibold text-xs ml-1 px-1.5 py-0.5 bg-white rounded-md ring-1 ring-gray-200"
-              >
-                {{ selectedTransaction.payment_method }}
-              </span>
-            </span>
-            <span class="text-gray-800">{{ formatRupiah(selectedTransaction.paid_amount) }}</span>
+          <div class="flex justify-between">
+            <span style="color: var(--tinta-soft)">Dibayar ({{ selectedTransaction.payment_method === 'cash' ? 'tunai' : 'QRIS' }})</span>
+            <span style="color: var(--tinta)">{{ formatRupiah(selectedTransaction.paid_amount) }}</span>
           </div>
-          <div
-            class="flex justify-between text-sm border-t border-dashed border-gray-200 pt-2 mt-1"
-          >
-            <span class="font-semibold text-gray-600">Kembalian</span>
-            <span class="font-bold text-orange-500">{{
+          <div class="flex justify-between text-base">
+            <span class="font-bold" style="color: var(--tinta)">Kembali</span>
+            <span class="font-extrabold" style="color: var(--bata-deep)">{{
               formatRupiah(selectedTransaction.change_amount)
             }}</span>
           </div>
         </div>
+
+        <div class="flex justify-center pt-1">
+          <span class="cap rotate-[-4deg]" style="color: var(--papan-deep)">Lunas</span>
+        </div>
       </div>
 
-      <div class="flex gap-2 px-5 sm:px-6 pb-5">
+      <div class="kertas flex gap-2 px-5 sm:px-6 pb-5">
         <button
           @click="isHistoryDetailVisible = false"
-          class="flex-1 py-2.5 text-sm text-gray-600 font-medium bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors"
+          class="flex-1 py-2.5 text-sm font-bold rounded-md border-2 transition-colors"
+          style="border-color: var(--tinta); color: var(--tinta)"
         >
           Tutup
         </button>
